@@ -2,12 +2,6 @@ import numpy as np
 import pandas as pd
 from ast import literal_eval
 
-# print(raw_data)
-# print(raw_data.info())
-# print(raw_data.describe())
-# print(raw_data["Value_rating"])
-# print(raw_data[raw_data["Value_rating"].notna()])
-
 def remove_rows_with_missing_ratings(raw_data):
     raw_data.dropna(subset=["Value_rating"], inplace=True)
     return raw_data
@@ -37,19 +31,6 @@ def clean_tabular_data(df):
     print(raw_data_default_features)
     print(raw_data_default_features.info())
     return raw_data_default_features
-
-# desc = raw_data.iloc[10]["Description"]
-# print(desc)
-# print(type(desc))
-# print("--------------------------------")
-# desc_list = literal_eval(desc)[1:]
-# print(desc_list)
-# print(type(desc_list))
-# desc_list_without_empty_quotes = list(filter(lambda x: x != "", desc_list))
-# print(desc_list_without_empty_quotes)
-# print("--------------------------------")
-# new = ' '.join(desc_list_without_empty_quotes)
-# print(new)
 
 if __name__ == '__main__':
     raw_data = pd.read_csv("listing.csv")
