@@ -38,11 +38,13 @@ class PrepareImages:
             new_size = (new_width, minimum_height)
             resized_image = img.resize(new_size)
             self.resized_image_list.append(resized_image)
+        print("All images resized!")
 
     def __download_resized_images(self):
         for img_name, img in zip(self.image_name_list, self.resized_image_list):
             file_path = os.path.join("/home/timothy/Documents/Aicore/Airbnb-Property-Modelling/processed_images", img_name)
             img.save(file_path)
+        print("All resized images downloaded")
 
     def do_whole_resize(self):
         PrepareImages.__import_images(self)
