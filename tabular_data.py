@@ -27,7 +27,6 @@ def fix_description_strings(df):
     df['Description'] = df['Description'].apply(is_valid_description)
     df.dropna(subset=["Description"], inplace=True)
     df["Description"] = df["Description"].apply(combine_description_strings)
-    print(df.info())
     return df
 
 def set_default_feature_values(df):
@@ -38,11 +37,21 @@ def clean_tabular_data(df):
     raw_data_with_ratings = remove_rows_with_missing_ratings(df)
     raw_data_with_description = fix_description_strings(raw_data_with_ratings)
     raw_data_default_features = set_default_feature_values(raw_data_with_description)
-    print(raw_data_default_features)
     print(raw_data_default_features.info())
     return raw_data_default_features
+
+def load_airbnb(df, label):
+    df_numerical = df.select_dtypes(include = ["int64", "float64"])
+    print(df_numerical.info())
+    print(df_numerical.loc[:, "bathrooms"].head(4))
+    label_series = df_numerical[label]
+    features = df_numerical.drop(label, axis=1)
+    # print(features.info())
+    full_data = (features, label_series)
+    return full_data
 
 if __name__ == '__main__':
     raw_data = pd.read_csv("listing.csv", index_col=0)
     clean_data = clean_tabular_data(raw_data)
     clean_data.to_csv("clean_tabular_data.csv")
+    full_data = load_airbnb(clean_data, "bathrooms")
