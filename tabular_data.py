@@ -37,16 +37,14 @@ def clean_tabular_data(df):
     raw_data_with_ratings = remove_rows_with_missing_ratings(df)
     raw_data_with_description = fix_description_strings(raw_data_with_ratings)
     raw_data_default_features = set_default_feature_values(raw_data_with_description)
-    print(raw_data_default_features.info())
     return raw_data_default_features
 
 def load_airbnb(df, label):
     df_numerical = df.select_dtypes(include = ["int64", "float64"])
     print(df_numerical.info())
-    print(df_numerical.loc[:, "bathrooms"].head(4))
+    print(df_numerical.loc[:, "bathrooms"].head(5))
     label_series = df_numerical[label]
     features = df_numerical.drop(label, axis=1)
-    # print(features.info())
     full_data = (features, label_series)
     return full_data
 
