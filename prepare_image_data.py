@@ -2,14 +2,6 @@ from PIL import Image
 import glob
 import os
 
-# def test():
-#     img_path = "/home/timothy/Documents/Aicore/Airbnb-Property-Modelling/images/0a26e526-1adf-4a2a-888d-a05f7f0a2f33/0a26e526-1adf-4a2a-888d-a05f7f0a2f33-a.png"
-#     img = Image.open(img_path)
-#     print(img.format)
-#     print(img.size)
-#     print(img.mode)
-#     img.show()
-
 class PrepareImages:
 
     def __init__(self):
