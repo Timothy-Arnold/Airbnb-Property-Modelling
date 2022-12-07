@@ -42,14 +42,15 @@ def clean_tabular_data(df):
 def load_airbnb(df, label):
     df_numerical = df.select_dtypes(include = ["int64", "float64"])
     print(df_numerical.info())
-    print(df_numerical.loc[:, "bathrooms"].head(5))
+    # print(df_numerical.loc[:, "bathrooms"].head(5))
     label_series = df_numerical[label]
     features = df_numerical.drop(label, axis=1)
     full_data = (features, label_series)
+    print("features / labels created")
     return full_data
 
 if __name__ == '__main__':
     raw_data = pd.read_csv("listing.csv", index_col=0)
     clean_data = clean_tabular_data(raw_data)
     clean_data.to_csv("clean_tabular_data.csv")
-    full_data = load_airbnb(clean_data, "bathrooms")
+    full_data = load_airbnb(clean_data, "Price_Night")
