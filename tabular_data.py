@@ -41,12 +41,12 @@ def clean_tabular_data(df):
 
 def load_airbnb(df, label):
     df_numerical = df.select_dtypes(include = ["int64", "float64"])
-    print(df_numerical.info())
+    # print(df_numerical.info())
     # print(df_numerical.loc[:, "bathrooms"].head(5))
     label_series = df_numerical[label]
     features = df_numerical.drop(label, axis=1)
     full_data = (features, label_series)
-    print("features / labels created")
+    # print("features / labels created")
     return full_data
 
 if __name__ == '__main__':
