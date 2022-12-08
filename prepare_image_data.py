@@ -1,6 +1,6 @@
-from PIL import Image
 import glob
 import os
+from PIL import Image
 
 class PrepareImages:
 
