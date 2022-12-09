@@ -14,6 +14,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import ShuffleSplit
 from sklearn.model_selection import validation_curve
+from sklearn.model_selection import GridSearchCV
 from torchvision.models import resnet50, resnet18
 
 np.random.seed(2)
@@ -53,10 +54,10 @@ def print_errors(y_hat_train, y_hat_validation):
 
 def custom_tune_regression_model_hyperparameters(model_class, 
     X_train, y_train, X_validation, y_validation, X_test, y_test, 
-    hyper_values_list_dict):
+    search_space):
     fitted_model_list = []
-    keys = hyper_values_list_dict.keys()
-    vals = hyper_values_list_dict.values()
+    keys = search_space.keys()
+    vals = search_space.values()
     for instance in itertools.product(*vals):
         hyper_values_dict = dict(zip(keys, instance))
         models_list = {"ResNet-50" : resnet50, "ResNet-18" : resnet18, "SGDRegression" : SGDRegressor}
@@ -71,10 +72,32 @@ def custom_tune_regression_model_hyperparameters(model_class,
     best_model_list = min(fitted_model_list, key=lambda x: x[2]["validation_RMSE"])
     print(f"Best model by validation_RMSE metric:\n{best_model_list}")
     return best_model_list
+
+def tune_regression_model_hyperparameters(model_class, 
+    X_train, y_train, X_validation, y_validation, X_test, y_test, 
+    search_space):
+    models_list = {"ResNet-50" : resnet50(), "ResNet-18" : resnet18(), "SGDRegression" : SGDRegressor()}
+    model = models_list[model_class]
+    GS = GridSearchCV(estimator = model, 
+                      param_grid = search_space, 
+                      scoring = "neg_root_mean_squared_error", 
+                      )
+    GS.fit(X_train, y_train)
+    print(GS.best_params_)
+    print(GS.best_score_)
         
 if __name__ == '__main__':
-    best_model_list = custom_tune_regression_model_hyperparameters("SGDRegression", 
+    # best_model_list = custom_tune_regression_model_hyperparameters("SGDRegression", 
+    # X_train, y_train, X_validation, y_validation, X_test, y_test, 
+    # search_space = {
+    # "penalty": ["l1", "l2", "elasticnet"],
+    # "early_stopping": [True, False], 
+    # "learning_rate": ["constant", "invscaling", "adaptive"]
+    # })
+    best_model_list = tune_regression_model_hyperparameters("SGDRegression", 
     X_train, y_train, X_validation, y_validation, X_test, y_test, 
-    hyper_values_list_dict={"penalty": ["l1", "l2", "elasticnet"],
+    search_space = {
+    "penalty": ["l1", "l2", "elasticnet"],
     "early_stopping": [True, False], 
-    "learning_rate": ["constant", "invscaling", "adaptive"]})
+    "learning_rate": ["constant", "invscaling", "adaptive"]
+    })
