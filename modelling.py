@@ -1,5 +1,7 @@
 import itertools
+import json
 import numpy as np
+import os
 import pandas as pd
 
 import tabular_data
@@ -55,6 +57,7 @@ def print_errors(y_hat_train, y_hat_validation):
 def custom_tune_regression_model_hyperparameters(model_class, 
     X_train, y_train, X_validation, y_validation, X_test, y_test, 
     search_space):
+    np.random.seed(2)
     fitted_model_list = []
     keys = search_space.keys()
     vals = search_space.values()
@@ -74,19 +77,39 @@ def custom_tune_regression_model_hyperparameters(model_class,
     return best_model_list
 
 def tune_regression_model_hyperparameters(model_class, 
-    X_train, y_train, X_validation, y_validation, X_test, y_test, 
-    search_space):
-    models_list = {"ResNet-50" : resnet50(), "ResNet-18" : resnet18(), "SGDRegression" : SGDRegressor()}
-    model = models_list[model_class]
+    X_train, y_train, X_validation, y_validation, search_space):
+    np.random.seed(2)
+    models_list = {"ResNet-50" : resnet50, "ResNet-18" : resnet18, "SGDRegression" : SGDRegressor}
+    model = models_list[model_class]()
     GS = GridSearchCV(estimator = model, 
                       param_grid = search_space, 
-                      scoring = "neg_root_mean_squared_error", 
+                      scoring = ["r2", "neg_root_mean_squared_error"], 
+                      refit = "neg_root_mean_squared_error"
                       )
     GS.fit(X_train, y_train)
-    print(GS.best_params_)
+    best_model = models_list[model_class](**GS.best_params_)
+    best_model.fit(X_train, y_train)
+    y_hat_validation = best_model.predict(X_validation)
+    validation_rmse = mean_squared_error(y_validation, y_hat_validation, squared=False)
+    validation_r2 = r2_score(y_validation, y_hat_validation)
+    performance_metrics_dict = {"validation_RMSE": validation_rmse, "validation_R2": validation_r2}
     print(GS.best_score_)
+    best_model_list = [best_model.fit(X_train, y_train), GS.best_params_, performance_metrics_dict]
+    print(best_model_list)
+    return best_model_list
+
+def save_model(model_list, folder="models/regression/linear_regression"):
+    model = model_list[0]
+    hyper_params = model_list[1]
+    performance_metrics = model_list[2]
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    with open(f"{folder}/hyperparameters.json", 'w') as fp:
+        json.dump(hyper_params, fp)
+    with open(f"{folder}/metrics.json", 'w') as fp:
+        json.dump(performance_metrics, fp)
         
-if __name__ == '__main__':
+if  __name__ == '__main__':
     # best_model_list = custom_tune_regression_model_hyperparameters("SGDRegression", 
     # X_train, y_train, X_validation, y_validation, X_test, y_test, 
     # search_space = {
@@ -95,8 +118,8 @@ if __name__ == '__main__':
     # "learning_rate": ["constant", "invscaling", "adaptive"]
     # })
     best_model_list = tune_regression_model_hyperparameters("SGDRegression", 
-    X_train, y_train, X_validation, y_validation, X_test, y_test, 
-    search_space = {
+    X_train, y_train, X_validation, y_validation, search_space = 
+    {
     "penalty": ["l1", "l2", "elasticnet"],
     "early_stopping": [True, False], 
     "learning_rate": ["constant", "invscaling", "adaptive"]
