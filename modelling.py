@@ -1,4 +1,5 @@
 import itertools
+import joblib
 import json
 import numpy as np
 import os
@@ -57,7 +58,6 @@ def print_errors(y_hat_train, y_hat_validation):
 def custom_tune_regression_model_hyperparameters(model_class, 
     X_train, y_train, X_validation, y_validation, X_test, y_test, 
     search_space):
-    np.random.seed(2)
     fitted_model_list = []
     keys = search_space.keys()
     vals = search_space.values()
@@ -78,7 +78,6 @@ def custom_tune_regression_model_hyperparameters(model_class,
 
 def tune_regression_model_hyperparameters(model_class, 
     X_train, y_train, X_validation, y_validation, search_space):
-    np.random.seed(2)
     models_list = {"ResNet-50" : resnet50, "ResNet-18" : resnet18, "SGDRegression" : SGDRegressor}
     model = models_list[model_class]()
     GS = GridSearchCV(estimator = model, 
@@ -104,23 +103,28 @@ def save_model(model_list, folder="models/regression/linear_regression"):
     performance_metrics = model_list[2]
     if not os.path.exists(folder):
         os.makedirs(folder)
+    joblib.dump(model, f"{folder}/model.joblib")
     with open(f"{folder}/hyperparameters.json", 'w') as fp:
         json.dump(hyper_params, fp)
     with open(f"{folder}/metrics.json", 'w') as fp:
         json.dump(performance_metrics, fp)
         
 if  __name__ == '__main__':
+    np.random.seed(2)
     # best_model_list = custom_tune_regression_model_hyperparameters("SGDRegression", 
     # X_train, y_train, X_validation, y_validation, X_test, y_test, 
     # search_space = {
     # "penalty": ["l1", "l2", "elasticnet"],
     # "early_stopping": [True, False], 
-    # "learning_rate": ["constant", "invscaling", "adaptive"]
+    # "learning_rate": ["constant", "invscaling", "adaptive"], 
+    # "max_iter": [500, 1000, 1500, 2000]
     # })
     best_model_list = tune_regression_model_hyperparameters("SGDRegression", 
     X_train, y_train, X_validation, y_validation, search_space = 
     {
     "penalty": ["l1", "l2", "elasticnet"],
     "early_stopping": [True, False], 
-    "learning_rate": ["constant", "invscaling", "adaptive"]
+    "learning_rate": ["constant", "invscaling", "adaptive"], 
+    "max_iter": [500, 1000, 1500, 2000]
     })
+    save_model(best_model_list)
