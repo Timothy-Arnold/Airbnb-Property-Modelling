@@ -4,3 +4,4 @@ processed_images/
 listing.csv
 test.ipynb
 .ipynb_checkpoints
+models/
