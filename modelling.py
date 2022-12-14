@@ -113,23 +113,15 @@ def save_model(model_list, folder="models/regression/linear_regression"):
 
 if  __name__ == '__main__':
     np.random.seed(2)
-    # best_model_list = custom_tune_regression_model_hyperparameters("SGDRegression", 
-    # X_train, y_train, X_validation, y_validation, X_test, y_test, 
-    # search_space = {
+    # linear_regression_model = tune_regression_model_hyperparameters("SGDRegressor", 
+    # X_train, y_train, X_validation, y_validation, search_space = 
+    # {
     # "penalty": ["l1", "l2", "elasticnet"],
     # "early_stopping": [True, False], 
     # "learning_rate": ["constant", "invscaling", "adaptive"], 
     # "max_iter": [500, 1000, 1500, 2000]
     # })
-    linear_regression_model = tune_regression_model_hyperparameters("SGDRegressor", 
-    X_train, y_train, X_validation, y_validation, search_space = 
-    {
-    "penalty": ["l1", "l2", "elasticnet"],
-    "early_stopping": [True, False], 
-    "learning_rate": ["constant", "invscaling", "adaptive"], 
-    "max_iter": [500, 1000, 1500, 2000]
-    })
-    save_model(linear_regression_model)
+    # save_model(linear_regression_model)
 
     decision_tree_model = tune_regression_model_hyperparameters("DecisionTreeRegressor", 
     X_train, y_train, X_validation, y_validation, search_space = 
@@ -137,7 +129,18 @@ if  __name__ == '__main__':
     "criterion": ["squared_error", "absolute_error"],
     "max_depth": [15, 30, 45, 60],
     "min_samples_split": [2, 4, 0.2, 0.4], 
-    "max_features": [8, 6, 4]
+    "max_features": [4, 6, 8]
     })
     save_model(decision_tree_model, folder="models/regression/decision_tree")
+
+    random_forest_model = tune_regression_model_hyperparameters("RandomForestRegressor", 
+    X_train, y_train, X_validation, y_validation, search_space = 
+    {
+    "n_estimators": [50, 100, 150],
+    "criterion": ["squared_error", "absolute_error"],
+    "max_depth": [20, 30, 40],
+    "min_samples_split": [0.1, 0.2],
+    "max_features": [1, 2]
+    })
+    save_model(random_forest_model, folder="models/regression/random_forest")
 
