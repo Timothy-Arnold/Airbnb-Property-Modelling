@@ -7,6 +7,8 @@ import pandas as pd
 
 import tabular_data
 from sklearn.linear_model import SGDRegressor
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
 
 from sklearn.metrics import mean_absolute_error
 from sklearn.metrics import mean_squared_error
@@ -78,7 +80,7 @@ def custom_tune_regression_model_hyperparameters(model_class,
 
 def tune_regression_model_hyperparameters(model_class, 
     X_train, y_train, X_validation, y_validation, search_space):
-    models_list = {"ResNet-50" : resnet50, "ResNet-18" : resnet18, "SGDRegression" : SGDRegressor}
+    models_list = {"ResNet-50" : resnet50, "ResNet-18" : resnet18, "SGDRegressor" : SGDRegressor, "DecisionTreeRegressor" : DecisionTreeRegressor, "RandomForestRegressor" : RandomForestRegressor}
     model = models_list[model_class]()
     GS = GridSearchCV(estimator = model, 
                       param_grid = search_space, 
@@ -108,7 +110,7 @@ def save_model(model_list, folder="models/regression/linear_regression"):
         json.dump(hyper_params, fp)
     with open(f"{folder}/metrics.json", 'w') as fp:
         json.dump(performance_metrics, fp)
-        
+
 if  __name__ == '__main__':
     np.random.seed(2)
     # best_model_list = custom_tune_regression_model_hyperparameters("SGDRegression", 
@@ -119,7 +121,7 @@ if  __name__ == '__main__':
     # "learning_rate": ["constant", "invscaling", "adaptive"], 
     # "max_iter": [500, 1000, 1500, 2000]
     # })
-    best_model_list = tune_regression_model_hyperparameters("SGDRegression", 
+    linear_regression_model = tune_regression_model_hyperparameters("SGDRegressor", 
     X_train, y_train, X_validation, y_validation, search_space = 
     {
     "penalty": ["l1", "l2", "elasticnet"],
@@ -127,4 +129,15 @@ if  __name__ == '__main__':
     "learning_rate": ["constant", "invscaling", "adaptive"], 
     "max_iter": [500, 1000, 1500, 2000]
     })
-    save_model(best_model_list)
+    save_model(linear_regression_model)
+
+    decision_tree_model = tune_regression_model_hyperparameters("DecisionTreeRegressor", 
+    X_train, y_train, X_validation, y_validation, search_space = 
+    {
+    "criterion": ["squared_error", "absolute_error"],
+    "max_depth": [15, 30, 45, 60],
+    "min_samples_split": [2, 4, 0.2, 0.4], 
+    "max_features": [8, 6, 4]
+    })
+    save_model(decision_tree_model, folder="models/regression/decision_tree")
+
