@@ -6,22 +6,17 @@ import os
 import pandas as pd
 
 import tabular_data
-from sklearn.linear_model import SGDRegressor
-from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.linear_model import SGDRegressor
 
 from sklearn.metrics import mean_absolute_error
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 
-from sklearn.model_selection import cross_validate
-from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import ShuffleSplit
-from sklearn.model_selection import validation_curve
 from sklearn.model_selection import GridSearchCV
-from torchvision.models import resnet50, resnet18
+from sklearn.tree import DecisionTreeRegressor
 
 np.random.seed(2)
 
@@ -66,7 +61,12 @@ def custom_tune_regression_model_hyperparameters(model_class,
     vals = search_space.values()
     for instance in itertools.product(*vals):
         hyper_values_dict = dict(zip(keys, instance))
-        models_list = {"ResNet-50" : resnet50, "ResNet-18" : resnet18, "SGDRegression" : SGDRegressor}
+        models_list =   {
+                        "SGDRegressor" : SGDRegressor,
+                        "DecisionTreeRegressor" : DecisionTreeRegressor, 
+                        "RandomForestRegressor" : RandomForestRegressor,
+                        "GradientBoostingRegressor" : GradientBoostingRegressor
+                        }
         model = models_list[model_class](**hyper_values_dict)
         model.fit(X_train, y_train)
         y_hat_validation = model.predict(X_validation)
@@ -167,4 +167,4 @@ if  __name__ == '__main__':
     np.random.seed(2)
     model_details_list = evaluate_all_models()
     best_model_details = find_best_model(model_details_list)
-    print("The best model" + best_model_details)
+    print(f"The best model: {best_model_details}")
