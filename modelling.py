@@ -9,6 +9,7 @@ import tabular_data
 from sklearn.linear_model import SGDRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import GradientBoostingRegressor
 
 from sklearn.metrics import mean_absolute_error
 from sklearn.metrics import mean_squared_error
@@ -80,7 +81,12 @@ def custom_tune_regression_model_hyperparameters(model_class,
 
 def tune_regression_model_hyperparameters(model_class, 
     X_train, y_train, X_validation, y_validation, search_space):
-    models_list = {"ResNet-50" : resnet50, "ResNet-18" : resnet18, "SGDRegressor" : SGDRegressor, "DecisionTreeRegressor" : DecisionTreeRegressor, "RandomForestRegressor" : RandomForestRegressor}
+    models_list =   {
+                    "SGDRegressor" : SGDRegressor,
+                    "DecisionTreeRegressor" : DecisionTreeRegressor, 
+                    "RandomForestRegressor" : RandomForestRegressor,
+                    "GradientBoostingRegressor" : GradientBoostingRegressor
+                    }
     model = models_list[model_class]()
     GS = GridSearchCV(estimator = model, 
                       param_grid = search_space, 
@@ -94,7 +100,6 @@ def tune_regression_model_hyperparameters(model_class,
     validation_rmse = mean_squared_error(y_validation, y_hat_validation, squared=False)
     validation_r2 = r2_score(y_validation, y_hat_validation)
     performance_metrics_dict = {"validation_RMSE": validation_rmse, "validation_R2": validation_r2}
-    print(GS.best_score_)
     best_model_list = [best_model.fit(X_train, y_train), GS.best_params_, performance_metrics_dict]
     print(best_model_list)
     return best_model_list
@@ -111,26 +116,17 @@ def save_model(model_list, folder="models/regression/linear_regression"):
     with open(f"{folder}/metrics.json", 'w') as fp:
         json.dump(performance_metrics, fp)
 
-if  __name__ == '__main__':
+def evaluate_all_models():
     np.random.seed(2)
-    # linear_regression_model = tune_regression_model_hyperparameters("SGDRegressor", 
-    # X_train, y_train, X_validation, y_validation, search_space = 
-    # {
-    # "penalty": ["l1", "l2", "elasticnet"],
-    # "early_stopping": [True, False], 
-    # "learning_rate": ["constant", "invscaling", "adaptive"], 
-    # "max_iter": [500, 1000, 1500, 2000]
-    # })
-    # save_model(linear_regression_model)
-
     decision_tree_model = tune_regression_model_hyperparameters("DecisionTreeRegressor", 
     X_train, y_train, X_validation, y_validation, search_space = 
     {
     "criterion": ["squared_error", "absolute_error"],
     "max_depth": [15, 30, 45, 60],
-    "min_samples_split": [2, 4, 0.2, 0.4], 
+    "min_samples_split": [2, 4, 0.2, 0.4],
     "max_features": [4, 6, 8]
     })
+
     save_model(decision_tree_model, folder="models/regression/decision_tree")
 
     random_forest_model = tune_regression_model_hyperparameters("RandomForestRegressor", 
@@ -138,9 +134,37 @@ if  __name__ == '__main__':
     {
     "n_estimators": [50, 100, 150],
     "criterion": ["squared_error", "absolute_error"],
-    "max_depth": [20, 30, 40],
-    "min_samples_split": [0.1, 0.2],
+    "max_depth": [30, 40, 50],
+    "min_samples_split": [2, 0.1, 0.2],
     "max_features": [1, 2]
     })
+
     save_model(random_forest_model, folder="models/regression/random_forest")
 
+    gradient_boosting_model = tune_regression_model_hyperparameters("GradientBoostingRegressor", 
+    X_train, y_train, X_validation, y_validation, search_space = 
+    {
+    "n_estimators": [25, 50, 100],
+    "loss": ["squared_error", "absolute_error"],
+    "max_depth": [1, 3, 5],
+    "learning_rate": [0.05, 0.1, 0.2],
+    "max_features": [1, 2, 3]
+    })
+
+    save_model(gradient_boosting_model, folder="models/regression/gradient_boosting")
+
+    return decision_tree_model, random_forest_model, gradient_boosting_model
+
+def find_best_model(model_details_list):
+    validation_scores = [x[2]["validation_RMSE"] for x in model_details_list]
+    print(validation_scores)
+    best_score_index = np.argmin(validation_scores)
+    print(best_score_index)
+    best_model_details = model_details_list[best_score_index]
+    return best_model_details
+
+if  __name__ == '__main__':
+    np.random.seed(2)
+    model_details_list = evaluate_all_models()
+    best_model_details = find_best_model(model_details_list)
+    print("The best model" + best_model_details)
