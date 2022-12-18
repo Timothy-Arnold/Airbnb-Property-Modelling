@@ -6,13 +6,9 @@ import os
 import pandas as pd
 
 import tabular_data
-# from sklearn.ensemble import 
-# from sklearn.ensemble import 
 from sklearn.linear_model import LogisticRegression
 
-from sklearn.metrics import mean_absolute_error
-from sklearn.metrics import mean_squared_error
-from sklearn.metrics import r2_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
@@ -24,15 +20,12 @@ from sklearn.preprocessing import LabelEncoder
 clean_data = pd.read_csv("clean_tabular_data.csv")
 features = clean_data.select_dtypes(include = ["int64", "float64"])
 label_series = clean_data["Category"]
-print(label_series.tail(30))
 
 # Encode labels
 
 label_categories = label_series.unique()
-print(label_categories)
 le = LabelEncoder()
 label_encoded = le.fit_transform(label_series)
-print(label_encoded[-30:])
 
 X, y = (features, label_encoded)
 
@@ -49,22 +42,21 @@ def create_first_model():
     y_hat_validation = log_reg.predict(X_validation)
     return [y_hat_train, y_hat_validation]
 
-def print_errors(y_hat_train, y_hat_validation):
-    train_rmse = mean_squared_error(y_train, y_hat_train, squared=False)
-    validation_rmse = mean_squared_error(y_validation, y_hat_validation, squared=False)
-    validation_mae = mean_absolute_error(y_validation, y_hat_validation)
-    validation_mse = mean_squared_error(y_validation, y_hat_validation)
-    train_r2 = r2_score(y_train, y_hat_train)
-    validation_r2 = r2_score(y_validation, y_hat_validation)
-
-    print("Mean root squared error on Training set: ", train_rmse)
-    print("Mean root squared error on Validation set: ", validation_rmse)
-    print("Mean absolute error on Validation set: ", validation_mae)
-    print("Mean squared error on Validation set: ", validation_mse)
-    print("R squared on Train set: ", train_r2)
-    print("R squared on Validation set: ", validation_r2)
+def print_performance(y_hat_train, y_hat_validation):
+    train_precision = precision_score(y_train, y_hat_train, average="micro", zero_division=0)
+    train_recall = recall_score(y_train, y_hat_train, average="micro")
+    train_f1 = f1_score(y_train, y_hat_train, average="micro")
+    test_precision = precision_score(y_validation, y_hat_validation, average="micro", zero_division=0)
+    test_recall = recall_score(y_validation, y_hat_validation, average="micro")
+    test_f1 = f1_score(y_validation, y_hat_validation, average="micro")
+    print("Train precision", train_precision)
+    print("Train recall", train_recall)
+    print("Train f1", train_f1)
+    print("Validation precision", test_precision)
+    print("Validation recall", test_recall)
+    print("Validation f1", test_f1)
 
 if  __name__ == '__main__':
     np.random.seed(2)
     y_hat = create_first_model()
-    print_errors(y_hat[0], y_hat[1])
+    print_performance(y_hat[0], y_hat[1])
