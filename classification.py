@@ -64,7 +64,7 @@ def print_performance(y_hat_train, y_hat_validation):
     print("Validation f1", test_f1)
     print("Validation report", test_report)
 
-def tune_regression_model_hyperparameters(model_class, 
+def tune_classification_model_hyperparameters(model_class, 
     X_train, y_train, X_validation, y_validation, search_space):
     models_list =   {
                     "LogisticRegression" : LogisticRegression,
@@ -100,10 +100,10 @@ def save_model(model_list, folder="models/classification/logistic_regression"):
     with open(f"{folder}/metrics.json", 'w') as fp:
         json.dump(performance_metrics, fp)
 
-def evaluate_all_models():
+def evaluate_all_models(task_folder="models/classification"):
     np.random.seed(2)
 
-    logistic_regression_model = tune_regression_model_hyperparameters("LogisticRegression", 
+    logistic_regression_model = tune_classification_model_hyperparameters("LogisticRegression", 
     X_train, y_train, X_validation, y_validation, search_space = 
     {
     "tol": [1E-5, 1E-4, 1E-3],
@@ -111,20 +111,20 @@ def evaluate_all_models():
     "multi_class": ["multinomial"]
     })
 
-    save_model(logistic_regression_model, folder="models/classification/logistic_regression")
+    save_model(logistic_regression_model, folder=f"{task_folder}/logistic_regression")
 
-    # decision_tree_model = tune_regression_model_hyperparameters("DecisionTreeClassifier", 
-    # X_train, y_train, X_validation, y_validation, search_space = 
-    # {
-    # "criterion": ["squared_error", "absolute_error"],
-    # "max_depth": [15, 30, 45, 60],
-    # "min_samples_split": [2, 4, 0.2, 0.4],
-    # "max_features": [4, 6, 8]
-    # })
+    decision_tree_model = tune_classification_model_hyperparameters("DecisionTreeClassifier", 
+    X_train, y_train, X_validation, y_validation, search_space = 
+    {
+    "criterion": ["gini", "entropy"],
+    "max_depth": [15, 30, 45, 60],
+    "min_samples_split": [2, 4, 0.2, 0.4],
+    "max_features": [4, 6, 8]
+    })
 
-    # save_model(decision_tree_model, folder="models/regression/decision_tree")
+    save_model(decision_tree_model, folder=f"{task_folder}/decision_tree")
 
-    # random_forest_model = tune_regression_model_hyperparameters("RandomForestClassifier", 
+    # random_forest_model = tune_classification_model_hyperparameters("RandomForestClassifier", 
     # X_train, y_train, X_validation, y_validation, search_space = 
     # {
     # "n_estimators": [50, 100, 150],
@@ -134,9 +134,9 @@ def evaluate_all_models():
     # "max_features": [1, 2]
     # })
 
-    # save_model(random_forest_model, folder="models/regression/random_forest")
+    # save_model(random_forest_model, folder="models/classification/random_forest")
 
-    # gradient_boosting_model = tune_regression_model_hyperparameters("GradientBoostingClassifier", 
+    # gradient_boosting_model = tune_classification_model_hyperparameters("GradientBoostingClassifier", 
     # X_train, y_train, X_validation, y_validation, search_space = 
     # {
     # "n_estimators": [25, 50, 100],
@@ -146,9 +146,9 @@ def evaluate_all_models():
     # "max_features": [1, 2, 3]
     # })
 
-    # save_model(gradient_boosting_model, folder="models/regression/gradient_boosting")
+    # save_model(gradient_boosting_model, folder="models/classification/gradient_boosting")
 
-    return logistic_regression_model
+    return logistic_regression_model, decision_tree_model
 
 if  __name__ == '__main__':
     y_hat = create_first_model()
