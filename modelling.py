@@ -116,7 +116,7 @@ def save_model(model_list, folder="models/regression/linear_regression"):
     with open(f"{folder}/metrics.json", 'w') as fp:
         json.dump(performance_metrics, fp)
 
-def evaluate_all_models():
+def evaluate_all_models(task_folder="models/regression"):
     np.random.seed(2)
     decision_tree_model = tune_regression_model_hyperparameters("DecisionTreeRegressor", 
     X_train, y_train, X_validation, y_validation, search_space = 
@@ -127,7 +127,7 @@ def evaluate_all_models():
     "max_features": [4, 6, 8]
     })
 
-    save_model(decision_tree_model, folder="models/regression/decision_tree")
+    save_model(decision_tree_model, folder=f"{task_folder}/decision_tree")
 
     random_forest_model = tune_regression_model_hyperparameters("RandomForestRegressor", 
     X_train, y_train, X_validation, y_validation, search_space = 
@@ -139,7 +139,7 @@ def evaluate_all_models():
     "max_features": [1, 2]
     })
 
-    save_model(random_forest_model, folder="models/regression/random_forest")
+    save_model(random_forest_model, folder=f"{task_folder}/random_forest")
 
     gradient_boosting_model = tune_regression_model_hyperparameters("GradientBoostingRegressor", 
     X_train, y_train, X_validation, y_validation, search_space = 
@@ -151,15 +151,13 @@ def evaluate_all_models():
     "max_features": [1, 2, 3]
     })
 
-    save_model(gradient_boosting_model, folder="models/regression/gradient_boosting")
+    save_model(gradient_boosting_model, folder=f"{task_folder}/gradient_boosting")
 
     return decision_tree_model, random_forest_model, gradient_boosting_model
 
 def find_best_model(model_details_list):
     validation_scores = [x[2]["validation_RMSE"] for x in model_details_list]
-    print(validation_scores)
     best_score_index = np.argmin(validation_scores)
-    print(best_score_index)
     best_model_details = model_details_list[best_score_index]
     return best_model_details
 
