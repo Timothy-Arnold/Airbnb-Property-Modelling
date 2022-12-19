@@ -88,7 +88,7 @@ def tune_regression_model_hyperparameters(model_class,
     print(best_model_list)
     return best_model_list
 
-def save_model(model_list, folder="models/classificatoin/logistic_regression"):
+def save_model(model_list, folder="models/classification/logistic_regression"):
     model = model_list[0]
     hyper_params = model_list[1]
     performance_metrics = model_list[2]
@@ -106,9 +106,8 @@ def evaluate_all_models():
     logistic_regression_model = tune_regression_model_hyperparameters("LogisticRegression", 
     X_train, y_train, X_validation, y_validation, search_space = 
     {
-    "penalty": ["l2"],
-    "tol": [0.0001, 0.001, 0.01],
-    "max_iter": [100, 400, 1000],
+    "tol": [1E-5, 1E-4, 1E-3],
+    "max_iter": [100, 1000, 2000, 3000],
     "multi_class": ["multinomial"]
     })
 
