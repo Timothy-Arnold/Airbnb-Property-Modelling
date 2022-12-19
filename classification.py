@@ -66,11 +66,12 @@ def print_performance(y_hat_train, y_hat_validation):
 
 def tune_classification_model_hyperparameters(model_class, 
     X_train, y_train, X_validation, y_validation, search_space):
+    np.random.seed(2)
     models_list =   {
                     "LogisticRegression" : LogisticRegression,
                     "DecisionTreeClassifier" : DecisionTreeClassifier, 
-                    "RandomForestRegressor" : RandomForestClassifier,
-                    "GradientBoostingRegressor" : GradientBoostingClassifier
+                    "RandomForestClassifier" : RandomForestClassifier,
+                    "GradientBoostingClassifier" : GradientBoostingClassifier
                     }
     model = models_list[model_class]()
     GS = GridSearchCV(estimator = model, 
@@ -102,17 +103,17 @@ def save_model(model_list, folder="models/classification/logistic_regression"):
 
 def evaluate_all_models(task_folder="models/classification"):
     np.random.seed(2)
-
     logistic_regression_model = tune_classification_model_hyperparameters("LogisticRegression", 
     X_train, y_train, X_validation, y_validation, search_space = 
     {
     "tol": [1E-5, 1E-4, 1E-3],
-    "max_iter": [100, 1000, 2000, 3000],
+    "max_iter": [100, 500, 1000],
     "multi_class": ["multinomial"]
     })
 
     save_model(logistic_regression_model, folder=f"{task_folder}/logistic_regression")
-
+    
+    np.random.seed(2)
     decision_tree_model = tune_classification_model_hyperparameters("DecisionTreeClassifier", 
     X_train, y_train, X_validation, y_validation, search_space = 
     {
@@ -124,34 +125,43 @@ def evaluate_all_models(task_folder="models/classification"):
 
     save_model(decision_tree_model, folder=f"{task_folder}/decision_tree")
 
-    # random_forest_model = tune_classification_model_hyperparameters("RandomForestClassifier", 
-    # X_train, y_train, X_validation, y_validation, search_space = 
-    # {
-    # "n_estimators": [50, 100, 150],
-    # "criterion": ["squared_error", "absolute_error"],
-    # "max_depth": [30, 40, 50],
-    # "min_samples_split": [2, 0.1, 0.2],
-    # "max_features": [1, 2]
-    # })
+    np.random.seed(2)
+    random_forest_model = tune_classification_model_hyperparameters("RandomForestClassifier", 
+    X_train, y_train, X_validation, y_validation, search_space = 
+    {
+    "n_estimators": [50, 100],
+    "criterion": ["gini", "entropy"],
+    "max_depth": [30, 40, 50],
+    "min_samples_split": [2, 0.1, 0.2],
+    "max_features": [1, 2, 3]
+    })
 
-    # save_model(random_forest_model, folder="models/classification/random_forest")
+    save_model(random_forest_model, folder=f"{task_folder}/random_forest")
 
-    # gradient_boosting_model = tune_classification_model_hyperparameters("GradientBoostingClassifier", 
-    # X_train, y_train, X_validation, y_validation, search_space = 
-    # {
-    # "n_estimators": [25, 50, 100],
-    # "loss": ["squared_error", "absolute_error"],
-    # "max_depth": [1, 3, 5],
-    # "learning_rate": [0.05, 0.1, 0.2],
-    # "max_features": [1, 2, 3]
-    # })
+    np.random.seed(2)
+    gradient_boosting_model = tune_classification_model_hyperparameters("GradientBoostingClassifier", 
+    X_train, y_train, X_validation, y_validation, search_space = 
+    {
+    "n_estimators": [25, 50, 100],
+    "loss": ["log_loss"],
+    "max_depth": [1, 3, 5],
+    "learning_rate": [0.05, 0.1, 0.2],
+    "max_features": [1, 2, 3]
+    })
 
-    # save_model(gradient_boosting_model, folder="models/classification/gradient_boosting")
+    save_model(gradient_boosting_model, folder=f"{task_folder}/gradient_boosting")
 
-    return logistic_regression_model, decision_tree_model
+    return logistic_regression_model, decision_tree_model, random_forest_model, gradient_boosting_model
+
+def find_best_model(model_details_list):
+    validation_scores = [x[2]["validation_accuracy"] for x in model_details_list]
+    best_score_index = np.argmax(validation_scores)
+    best_model_details = model_details_list[best_score_index]
+    return best_model_details
 
 if  __name__ == '__main__':
     y_hat = create_first_model()
-    print_performance(y_hat[0], y_hat[1])
-    logistic_regression_model = evaluate_all_models()
-    
+    # print_performance(y_hat[0], y_hat[1])
+    model_details_list = evaluate_all_models()
+    best_model_details = find_best_model(model_details_list)
+    print(f"The best model: {best_model_details}")
