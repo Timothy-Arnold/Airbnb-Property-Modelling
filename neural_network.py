@@ -30,28 +30,26 @@ class AirbnbNightlyPriceImageDataset(Dataset):
         return len(self.X)
 
 dataset = AirbnbNightlyPriceImageDataset()
-print(dataset[3])
-print(type(dataset))
-print(type(dataset[3][0]))
-print(len(dataset))
+# print(dataset[3])
+# print(type(dataset))
+# print(type(dataset[3][0]))
+# print(len(dataset))
 
-train_set, test_set = torch.utils.data.random_split(dataset, [int(len(dataset) * 0.85), len(dataset) - int(len(dataset) * 0.85)])
+train_set, test_set = torch.utils.data.random_split(dataset, [int(len(dataset) * 17/20), len(dataset) - int(len(dataset) * 17/20)])
 train_set, validation_set = torch.utils.data.random_split(train_set, [int(len(train_set) * 14/17), len(train_set) - int(len(train_set) * 14/17)])
 
 print(len(train_set))
 print(len(validation_set))
 print(len(test_set))
 
-train_loader = DataLoader(train_set, batch_size=len(train_set), shuffle=True)
-validation_loader = DataLoader(validation_set, batch_size=len(validation_set), shuffle=True)
-test_loader = DataLoader(test_set, batch_size=len(test_set), shuffle=True)
+batch_size = 4
 
-print(type(train_set))
-print(type(train_loader))
+train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+validation_loader = DataLoader(validation_set, batch_size=batch_size, shuffle=True)
+test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
 
-# for batch in test_loader:
-#     print(batch)
-#     features, labels = batch
-#     print(features.shape)
-#     print(labels.shape)
-#     break
+# print(type(train_set))
+# print(type(train_loader))
+
+example = next(iter(train_loader))
+print(example)
