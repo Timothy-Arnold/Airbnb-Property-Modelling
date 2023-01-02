@@ -8,6 +8,8 @@ from torch.utils.data import DataLoader
 from torch.utils.data import random_split
 from torchvision import transforms
 
+np.random.seed(2)
+
 transform = transforms.PILToTensor()
 
 clean_data = pd.read_csv("clean_tabular_data.csv")
@@ -51,9 +53,8 @@ train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 validation_loader = DataLoader(validation_set, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
 
-print(type(train_set))
+print(f"The type of the train set: {type(train_set)}")
 # print(type(train_loader))
-
 example = next(iter(train_loader))
 # print(example)
 features, label = example
@@ -74,7 +75,10 @@ def train(model, data_loader, epochs):
     for epoch in range(epochs):
         example = next(iter(data_loader))
         features, label = example
+        print(features.size())
         features = features.reshape(batch_size, -1)
         print(model(features))
 
-train(NeuralNetwork(), train_loader, 1)
+if  __name__ == '__main__':
+    np.random.seed(2)
+    train(NeuralNetwork(), train_loader, 1)
