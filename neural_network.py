@@ -5,7 +5,8 @@ import tabular_data
 import torch
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
-from torch.utils.data import random_split
+from torch.utils.data import random_split 
+import torch.nn.functional as F
 from torchvision import transforms
 
 np.random.seed(2)
@@ -47,38 +48,44 @@ print("Size of train set: " + str(len(train_set)))
 print("Size of validation set: " + str(len(validation_set)))
 print("Size of test set: " + str(len(test_set)))
 
-batch_size = 4
+batch_size = 8
 
 train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 validation_loader = DataLoader(validation_set, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
 
 print(f"The type of the train set: {type(train_set)}")
-# print(type(train_loader))
-example = next(iter(train_loader))
-# print(example)
-features, label = example
-features = features.reshape(batch_size, -1)
 
-class NeuralNetwork(torch.nn.Module):
-    def __init__(self) -> None:
+class NN(torch.nn.Module):
+    def __init__(self):
         super().__init__()
-        # Initialize parameters
-        self.linear_layer = torch.nn.Linear(number_of_features, 1)
+        # define layers
+        self.linear_layer = torch.nn.Linear(number_of_features, 16)
+        self.linear_layer2 = torch.nn.Linear(16, 1)
 
-    def forward(self, features):
+    def forward(self, X):
         # Use the layers to process the features
-        features = features.type(torch.float)
-        return self.linear_layer(features)
+        X = X.type(torch.float)
+        X = self.linear_layer(X)
+        X = F.relu(X)
+        X = self.linear_layer2(X)
+        return X
 
 def train(model, data_loader, epochs):
+
+    optimiser = torch.optim.SGD(model.parameters(), lr=0.001)
+
     for epoch in range(epochs):
-        example = next(iter(data_loader))
-        features, label = example
-        print(features.size())
-        features = features.reshape(batch_size, -1)
-        print(model(features))
+        for batch in data_loader:
+            features, labels = batch
+            prediction = model(features)
+            loss = F.mse_loss(prediction, labels.float())
+            loss.backward()
+            print(loss.item())
+            optimiser.step() # optimisation step
+            optimiser.zero_grad()
 
 if  __name__ == '__main__':
     np.random.seed(2)
-    train(NeuralNetwork(), train_loader, 1)
+    model = NN()
+    train(NN(), train_loader, 1)
