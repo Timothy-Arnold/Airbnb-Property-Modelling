@@ -13,16 +13,6 @@ np.random.seed(2)
 
 transform = transforms.PILToTensor()
 
-
-
-# print(type(X))
-# print(type(y))
-# features = X
-# print(type(features))
-# label = y
-# number_of_features = len(features[1])
-# print(f"Number of features: {number_of_features}")
-
 np.random.seed(2)
 
 class AirbnbNightlyPriceImageDataset(Dataset):
@@ -67,15 +57,15 @@ class NN(torch.nn.Module):
     def __init__(self):
         super().__init__()
         # define layers
-        self.linear_layer = torch.nn.Linear(11, 16)
-        self.linear_layer2 = torch.nn.Linear(16, 1)
+        self.layers = torch.nn.Sequential(
+            torch.nn.Linear(11, 16),
+            torch.nn.ReLU(),
+            torch.nn.Linear(16, 1)
+        )
 
     def forward(self, X):
         # Use the layers to process the features
-        X = self.linear_layer(X)
-        X = F.relu(X)
-        X = self.linear_layer2(X)
-        return 
+        return self.layers(X)
 
 def train(model, data_loader, epochs):
 
@@ -84,9 +74,11 @@ def train(model, data_loader, epochs):
     for epoch in range(epochs):
         for batch in data_loader:
             features, labels = batch
+            features = features.type(torch.float32)
+            labels = torch.unsqueeze(labels, 1)
             prediction = model(features)
             # Make labels the same shape as predictions
-            loss = F.mse_loss(prediction, labels)
+            loss = F.mse_loss(prediction, labels.float())
             loss.backward()
             print(loss.item())
             optimiser.step() # optimisation step
