@@ -7,11 +7,7 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from torch.utils.data import random_split 
 import torch.nn.functional as F
-from torchvision import transforms
-
-np.random.seed(2)
-
-transform = transforms.PILToTensor()
+from torch.utils.tensorboard import SummaryWriter
 
 np.random.seed(2)
 
@@ -56,7 +52,7 @@ print(f"The type of the train set: {type(train_set)}")
 class NN(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        # define layers
+        # Define layers
         self.layers = torch.nn.Sequential(
             torch.nn.Linear(11, 16),
             torch.nn.ReLU(),
@@ -65,11 +61,14 @@ class NN(torch.nn.Module):
 
     def forward(self, X):
         # Use the layers to process the features
-        return self.layers(X)
+        processed_features = self.layers(X)
+        return processed_features
 
 def train(model, data_loader, epochs):
 
-    optimiser = torch.optim.SGD(model.parameters(), lr=0.001)
+    optimiser = torch.optim.SGD(model.parameters(), lr=1e-3)
+
+    writer = SummaryWriter()
 
     for epoch in range(epochs):
         for batch in data_loader:
@@ -87,4 +86,4 @@ def train(model, data_loader, epochs):
 if  __name__ == '__main__':
     np.random.seed(2)
     model = NN()
-    train(NN(), train_loader, 1)
+    train(model, train_loader, 10)
