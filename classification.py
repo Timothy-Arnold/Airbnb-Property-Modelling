@@ -1,3 +1,4 @@
+import collections
 import itertools
 import joblib
 import json
@@ -30,6 +31,11 @@ np.random.seed(2)
 label_categories = label_series.unique()
 le = LabelEncoder()
 label_encoded = le.fit_transform(label_series)
+
+# Count how many of each label there is
+label_count = collections.Counter(label_encoded)
+for key, value in label_count.items():
+   print(f"{key}: {value}")
 
 X, y = (features, label_encoded)
 
