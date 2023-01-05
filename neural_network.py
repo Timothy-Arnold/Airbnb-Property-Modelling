@@ -16,8 +16,6 @@ class AirbnbNightlyPriceImageDataset(Dataset):
         super().__init__()
         clean_data = pd.read_csv("clean_tabular_data.csv")
         self.features, self.label = tabular_data.load_airbnb(clean_data, "Price_Night")
-        print(type(self.features))
-        print(type(self.label))
 
     def __getitem__(self, index):
         features = self.features.iloc[index]
@@ -70,6 +68,8 @@ def train(model, data_loader, epochs):
 
     writer = SummaryWriter()
 
+    batch_idx = 0
+
     for epoch in range(epochs):
         for batch in data_loader:
             features, labels = batch
@@ -82,8 +82,10 @@ def train(model, data_loader, epochs):
             print(loss.item())
             optimiser.step() # optimisation step
             optimiser.zero_grad()
+            writer.add_scalar("loss", loss.item(), batch_idx)
+            batch_idx += 1
 
 if  __name__ == '__main__':
     np.random.seed(2)
     model = NN()
-    train(model, train_loader, 10)
+    train(model, train_loader, 3)
