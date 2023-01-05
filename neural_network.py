@@ -13,33 +13,40 @@ np.random.seed(2)
 
 transform = transforms.PILToTensor()
 
-clean_data = pd.read_csv("clean_tabular_data.csv")
-X, y = tabular_data.load_airbnb(clean_data, "Price_Night")
-print(type(X))
-features = X.to_numpy()
-print(type(features))
-label = y.to_numpy()
-number_of_features = len(features[1])
-print(f"Number of features: {number_of_features}")
+
+
+# print(type(X))
+# print(type(y))
+# features = X
+# print(type(features))
+# label = y
+# number_of_features = len(features[1])
+# print(f"Number of features: {number_of_features}")
 
 np.random.seed(2)
 
 class AirbnbNightlyPriceImageDataset(Dataset):
     def __init__(self):
         super().__init__()
-        self.X = features
-        self.y = label
+        clean_data = pd.read_csv("clean_tabular_data.csv")
+        self.features, self.label = tabular_data.load_airbnb(clean_data, "Price_Night")
+        print(type(self.features))
+        print(type(self.label))
 
     def __getitem__(self, index):
-        return (self.X[index], self.y[index])
+        features = self.features.iloc[index]
+        features = torch.tensor(features)
+        label = self.label.iloc[index]
+        return (features, label)
 
     def __len__(self):
-        return len(self.X)
+        return len(self.features)
 
 dataset = AirbnbNightlyPriceImageDataset()
-# print(dataset[3])
-# print(type(dataset))
-# print(type(dataset[3][0]))
+print(dataset[1])
+print(type(dataset))
+print(type(dataset[3][0]))
+print(type(dataset[3][1]))
 
 train_set, test_set = torch.utils.data.random_split(dataset, [int(len(dataset) * 17/20), len(dataset) - int(len(dataset) * 17/20)])
 train_set, validation_set = torch.utils.data.random_split(train_set, [int(len(train_set) * 14/17), len(train_set) - int(len(train_set) * 14/17)])
@@ -60,16 +67,15 @@ class NN(torch.nn.Module):
     def __init__(self):
         super().__init__()
         # define layers
-        self.linear_layer = torch.nn.Linear(number_of_features, 16)
+        self.linear_layer = torch.nn.Linear(11, 16)
         self.linear_layer2 = torch.nn.Linear(16, 1)
 
     def forward(self, X):
         # Use the layers to process the features
-        X = X.type(torch.float)
         X = self.linear_layer(X)
         X = F.relu(X)
         X = self.linear_layer2(X)
-        return X
+        return 
 
 def train(model, data_loader, epochs):
 
@@ -79,7 +85,8 @@ def train(model, data_loader, epochs):
         for batch in data_loader:
             features, labels = batch
             prediction = model(features)
-            loss = F.mse_loss(prediction, labels.float())
+            # Make labels the same shape as predictions
+            loss = F.mse_loss(prediction, labels)
             loss.backward()
             print(loss.item())
             optimiser.step() # optimisation step
