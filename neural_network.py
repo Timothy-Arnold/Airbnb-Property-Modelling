@@ -1,9 +1,7 @@
-import joblib
 import json
 import numpy as np
 import os
 import pandas as pd
-import random
 import tabular_data
 import torch
 import torch.nn.functional as F
@@ -41,7 +39,7 @@ dataset = AirbnbNightlyPriceImageDataset()
 
 train_set, test_set = random_split(dataset, [int(len(dataset) * 17/20), len(dataset) - int(len(dataset) * 17/20)])
 train_set, validation_set = random_split(train_set, [int(len(train_set) * 14/17), len(train_set) - int(len(train_set) * 14/17)])
-
+print(f"The type of the train set: {type(train_set)}")
 print("Size of train set: " + str(len(train_set)))
 print("Size of validation set: " + str(len(validation_set)))
 print("Size of test set: " + str(len(test_set)))
@@ -51,8 +49,6 @@ batch_size = 8
 train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 validation_loader = DataLoader(validation_set, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
-
-print(f"The type of the train set: {type(train_set)}")
 
 def get_nn_config():
     with open("nn_config.yaml", 'r') as stream:
@@ -113,7 +109,38 @@ def train(model, data_loader, epochs):
             batch_idx += 1
 
 def evaluate_model(model, training_duration):
+    # Initialize performance metrics dictionary
     metrics_dict = {"training_duration": training_duration}
+
+    X_train = torch.stack([tuple[0] for tuple in train_set]).type(torch.float32)
+    y_train = torch.stack([torch.tensor(tuple[1]) for tuple in train_set])
+    y_train = torch.unsqueeze(y_train, 1)
+    y_hat_train = model(X_train)
+    train_rmse_loss = torch.sqrt(F.mse_loss(y_hat_train, y_train.float()))
+    train_r2_score = 1 - train_rmse_loss / torch.var(y_train.float())
+
+    X_validation = torch.stack([tuple[0] for tuple in validation_set]).type(torch.float32)
+    y_validation = torch.stack([torch.tensor(tuple[1]) for tuple in validation_set])
+    y_validation = torch.unsqueeze(y_validation, 1)
+    y_hat_validation = model(X_validation)
+    validation_rmse_loss = torch.sqrt(F.mse_loss(y_hat_validation, y_validation.float()))
+    validation_r2_score = 1 - validation_rmse_loss / torch.var(y_validation.float())
+
+    X_test = torch.stack([tuple[0] for tuple in test_set]).type(torch.float32)
+    y_test = torch.stack([torch.tensor(tuple[1]) for tuple in test_set])
+    y_test = torch.unsqueeze(y_test, 1)
+    y_hat_test = model(X_test)
+    test_rmse_loss = torch.sqrt(F.mse_loss(y_hat_test, y_test.float()))
+    test_r2_score = 1 - test_rmse_loss / torch.var(y_test.float())
+
+    RMSE_loss = [train_rmse_loss, validation_rmse_loss, test_rmse_loss]
+    R_squared = [train_r2_score, validation_r2_score, test_r2_score]
+    print(RMSE_loss)
+    print(R_squared)
+
+    metrics_dict["RMSE_loss"] = [loss.item() for loss in RMSE_loss]
+    metrics_dict["R_squared"] = [score.item() for score in R_squared]
+
     return metrics_dict
 
 def save_model(model, performance_metrics, nn_folder="models/regression/neural_networks"):
@@ -123,7 +150,6 @@ def save_model(model, performance_metrics, nn_folder="models/regression/neural_n
         # Make model folder
         if not os.path.exists(nn_folder):
             os.makedirs(nn_folder)
-        print("Made nn folder")
         save_time = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
         model_folder = nn_folder + "/" + save_time
         os.mkdir(model_folder)
@@ -149,6 +175,6 @@ def do_full_model_train(model, epochs=10):
 if  __name__ == '__main__':
     np.random.seed(2)
     model = NN()
-    do_full_model_train(model)
+    do_full_model_train(model, 2)
     sd = model.state_dict()
     print(sd)
