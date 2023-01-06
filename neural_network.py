@@ -1,14 +1,19 @@
+import joblib
+import json
 import numpy as np
+import os
 import pandas as pd
-import yaml
-from yaml.loader import BaseLoader
 import random
 import tabular_data
 import torch
+import torch.nn.functional as F
+import yaml
+
+import time
+from datetime import datetime
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from torch.utils.data import random_split 
-import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 
 np.random.seed(2)
@@ -84,7 +89,6 @@ class NN(torch.nn.Module):
         return processed_features
 
 def train(model, data_loader, epochs):
-
     optimizer_class = hyper_dict["optimizer"]
     optimizer_instance = getattr(torch.optim, optimizer_class)
     optimizer = optimizer_instance(model.parameters(), lr=hyper_dict["learning_rate"])
@@ -108,7 +112,43 @@ def train(model, data_loader, epochs):
             writer.add_scalar("loss", loss.item(), batch_idx)
             batch_idx += 1
 
+def evaluate_model(model, training_duration):
+    metrics_dict = {"training_duration": training_duration}
+    return metrics_dict
+
+def save_model(model, performance_metrics, nn_folder="models/regression/neural_networks"):
+    if not isinstance(model, torch.nn.Module):
+        print("Error: Model is not a Pytorch Module!")
+    else:
+        # Make model folder
+        if not os.path.exists(nn_folder):
+            os.makedirs(nn_folder)
+        print("Made nn folder")
+        save_time = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
+        model_folder = nn_folder + "/" + save_time
+        os.mkdir(model_folder)
+        # Save model
+        torch.save(model.state_dict(), f"{model_folder}/model.pt")
+        # Get and save hyper parameters
+        hyper_params = get_nn_config()
+        with open(f"{model_folder}/hyperparameters.json", 'w') as fp:
+            json.dump(hyper_params, fp)
+        # Save performance metrics
+        with open(f"{model_folder}/metrics.json", 'w') as fp:
+            json.dump(performance_metrics, fp)
+
+def do_full_model_train(model, epochs=10):
+    start_time = time.time()
+    train(model, train_loader, epochs)
+    end_time = time.time()
+    training_duration = end_time - start_time
+    print(f"It took {training_duration} seconds to train the model")
+    metrics_dict = evaluate_model(model, training_duration)
+    save_model(model, metrics_dict)
+
 if  __name__ == '__main__':
     np.random.seed(2)
     model = NN()
-    train(model, train_loader, 3)
+    do_full_model_train(model)
+    sd = model.state_dict()
+    print(sd)
