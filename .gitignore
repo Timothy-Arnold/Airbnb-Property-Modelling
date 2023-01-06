@@ -6,3 +6,4 @@ sandbox.ipynb
 .ipynb_checkpoints
 models/
 runs/
+nn_config.yaml
