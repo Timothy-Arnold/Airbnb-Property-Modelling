@@ -66,9 +66,7 @@ class NN(torch.nn.Module):
         super().__init__()
         # Define layers
         width = config["hidden_layer_width"]
-        print(f"width: {width}")
         depth = config["depth"]
-        print(f"depth: {depth}")
         layers = []
         layers.append(torch.nn.Linear(11, width))
         for hidden_layer in range(depth - 1):
@@ -123,8 +121,8 @@ def evaluate_model(model, training_duration, epochs):
     train_rmse_loss = torch.sqrt(F.mse_loss(y_hat_train, y_train.float()))
     train_r2_score = 1 - train_rmse_loss / torch.var(y_train.float())
 
-    print(train_rmse_loss)
-    print(train_r2_score)
+    print("Train RMSE:", train_rmse_loss.item())
+    print("Train R2:", train_r2_score.item())
 
     X_validation = torch.stack([tuple[0] for tuple in validation_set]).type(torch.float32)
     y_validation = torch.stack([torch.tensor(tuple[1]) for tuple in validation_set])
@@ -133,8 +131,8 @@ def evaluate_model(model, training_duration, epochs):
     validation_rmse_loss = torch.sqrt(F.mse_loss(y_hat_validation, y_validation.float()))
     validation_r2_score = 1 - validation_rmse_loss / torch.var(y_validation.float())
 
-    print(validation_rmse_loss)
-    print(validation_r2_score)
+    print("Validation RMSE:", validation_rmse_loss.item())
+    print("Validation R2:", validation_r2_score.item())
 
     X_test = torch.stack([tuple[0] for tuple in test_set]).type(torch.float32)
     y_test = torch.stack([torch.tensor(tuple[1]) for tuple in test_set])
@@ -143,8 +141,8 @@ def evaluate_model(model, training_duration, epochs):
     test_rmse_loss = torch.sqrt(F.mse_loss(y_hat_test, y_test.float()))
     test_r2_score = 1 - test_rmse_loss / torch.var(y_test.float())
 
-    print(test_rmse_loss)
-    print(test_r2_score)
+    print("Test RMSE:", test_rmse_loss.item())
+    print("Test R2:", test_r2_score.item())
 
     RMSE_loss = [train_rmse_loss, validation_rmse_loss, test_rmse_loss]
     R_squared = [train_r2_score, validation_r2_score, test_r2_score]
@@ -174,7 +172,7 @@ def save_model(model, performance_metrics, nn_folder="models/regression/neural_n
         with open(f"{model_folder}/metrics.json", 'w') as fp:
             json.dump(performance_metrics, fp)
 
-def do_full_model_train(model, epochs=10):
+def do_full_model_train(model, epochs=5):
     start_time = time.time()
     train(model, train_loader, epochs)
     end_time = time.time()
@@ -187,5 +185,3 @@ if  __name__ == '__main__':
     np.random.seed(2)
     model = NN()
     do_full_model_train(model, 2)
-    sd = model.state_dict()
-    print(sd)
