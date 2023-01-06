@@ -102,15 +102,19 @@ def train(model, data_loader, epochs):
             # Make labels the same shape as predictions
             loss = F.mse_loss(prediction, labels.float())
             loss.backward()
-            print(loss.item())
+            print("Loss:", loss.item())
             optimizer.step() # optimisation step
             optimizer.zero_grad()
             writer.add_scalar("loss", loss.item(), batch_idx)
             batch_idx += 1
 
-def evaluate_model(model, training_duration):
+def evaluate_model(model, training_duration, epochs):
     # Initialize performance metrics dictionary
     metrics_dict = {"training_duration": training_duration}
+
+    number_of_predictions = epochs * len(train_set)
+    inference_latency = training_duration / number_of_predictions
+    metrics_dict["inference_latency"] = inference_latency
 
     X_train = torch.stack([tuple[0] for tuple in train_set]).type(torch.float32)
     y_train = torch.stack([torch.tensor(tuple[1]) for tuple in train_set])
@@ -119,12 +123,18 @@ def evaluate_model(model, training_duration):
     train_rmse_loss = torch.sqrt(F.mse_loss(y_hat_train, y_train.float()))
     train_r2_score = 1 - train_rmse_loss / torch.var(y_train.float())
 
+    print(train_rmse_loss)
+    print(train_r2_score)
+
     X_validation = torch.stack([tuple[0] for tuple in validation_set]).type(torch.float32)
     y_validation = torch.stack([torch.tensor(tuple[1]) for tuple in validation_set])
     y_validation = torch.unsqueeze(y_validation, 1)
     y_hat_validation = model(X_validation)
     validation_rmse_loss = torch.sqrt(F.mse_loss(y_hat_validation, y_validation.float()))
     validation_r2_score = 1 - validation_rmse_loss / torch.var(y_validation.float())
+
+    print(validation_rmse_loss)
+    print(validation_r2_score)
 
     X_test = torch.stack([tuple[0] for tuple in test_set]).type(torch.float32)
     y_test = torch.stack([torch.tensor(tuple[1]) for tuple in test_set])
@@ -133,10 +143,11 @@ def evaluate_model(model, training_duration):
     test_rmse_loss = torch.sqrt(F.mse_loss(y_hat_test, y_test.float()))
     test_r2_score = 1 - test_rmse_loss / torch.var(y_test.float())
 
+    print(test_rmse_loss)
+    print(test_r2_score)
+
     RMSE_loss = [train_rmse_loss, validation_rmse_loss, test_rmse_loss]
     R_squared = [train_r2_score, validation_r2_score, test_r2_score]
-    print(RMSE_loss)
-    print(R_squared)
 
     metrics_dict["RMSE_loss"] = [loss.item() for loss in RMSE_loss]
     metrics_dict["R_squared"] = [score.item() for score in R_squared]
@@ -169,7 +180,7 @@ def do_full_model_train(model, epochs=10):
     end_time = time.time()
     training_duration = end_time - start_time
     print(f"It took {training_duration} seconds to train the model")
-    metrics_dict = evaluate_model(model, training_duration)
+    metrics_dict = evaluate_model(model, training_duration, epochs)
     save_model(model, metrics_dict)
 
 if  __name__ == '__main__':
