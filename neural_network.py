@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import yaml
+from yaml.loader import BaseLoader
 import random
 import tabular_data
 import torch
@@ -27,13 +29,13 @@ class AirbnbNightlyPriceImageDataset(Dataset):
         return len(self.features)
 
 dataset = AirbnbNightlyPriceImageDataset()
-print(dataset[1])
-print(type(dataset))
-print(type(dataset[3][0]))
-print(type(dataset[3][1]))
+# print(dataset[1])
+# print(type(dataset))
+# print(type(dataset[3][0]))
+# print(type(dataset[3][1]))
 
-train_set, test_set = torch.utils.data.random_split(dataset, [int(len(dataset) * 17/20), len(dataset) - int(len(dataset) * 17/20)])
-train_set, validation_set = torch.utils.data.random_split(train_set, [int(len(train_set) * 14/17), len(train_set) - int(len(train_set) * 14/17)])
+train_set, test_set = random_split(dataset, [int(len(dataset) * 17/20), len(dataset) - int(len(dataset) * 17/20)])
+train_set, validation_set = random_split(train_set, [int(len(train_set) * 14/17), len(train_set) - int(len(train_set) * 14/17)])
 
 print("Size of train set: " + str(len(train_set)))
 print("Size of validation set: " + str(len(validation_set)))
@@ -47,15 +49,34 @@ test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
 
 print(f"The type of the train set: {type(train_set)}")
 
+def get_nn_config():
+    with open("nn_config.yaml", 'r') as stream:
+        try:
+            hyper_dict = yaml.safe_load(stream)
+            print(hyper_dict)
+        except yaml.YAMLError as error:
+            print(error)
+    return hyper_dict
+
+hyper_dict = get_nn_config()
+
 class NN(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, config=hyper_dict):
         super().__init__()
         # Define layers
-        self.layers = torch.nn.Sequential(
-            torch.nn.Linear(11, 16),
-            torch.nn.ReLU(),
-            torch.nn.Linear(16, 1)
-        )
+        width = config["hidden_layer_width"]
+        print(f"width: {width}")
+        depth = config["depth"]
+        print(f"depth: {depth}")
+        layers = []
+        layers.append(torch.nn.Linear(11, width))
+        for hidden_layer in range(depth - 1):
+            layers.append(torch.nn.ReLU())
+            layers.append(torch.nn.Linear(width, width))
+        layers.append(torch.nn.ReLU())
+        layers.append(torch.nn.Linear(width, 1))
+        print(f"Layers: {layers}")
+        self.layers = torch.nn.Sequential(*layers)
 
     def forward(self, X):
         # Use the layers to process the features
@@ -64,7 +85,9 @@ class NN(torch.nn.Module):
 
 def train(model, data_loader, epochs):
 
-    optimiser = torch.optim.SGD(model.parameters(), lr=1e-3)
+    optimizer_class = hyper_dict["optimizer"]
+    optimizer_instance = getattr(torch.optim, optimizer_class)
+    optimizer = optimizer_instance(model.parameters(), lr=hyper_dict["learning_rate"])
 
     writer = SummaryWriter()
 
@@ -80,8 +103,8 @@ def train(model, data_loader, epochs):
             loss = F.mse_loss(prediction, labels.float())
             loss.backward()
             print(loss.item())
-            optimiser.step() # optimisation step
-            optimiser.zero_grad()
+            optimizer.step() # optimisation step
+            optimizer.zero_grad()
             writer.add_scalar("loss", loss.item(), batch_idx)
             batch_idx += 1
 
