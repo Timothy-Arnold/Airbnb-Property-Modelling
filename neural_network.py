@@ -33,10 +33,6 @@ class AirbnbNightlyPriceImageDataset(Dataset):
         return len(self.features)
 
 dataset = AirbnbNightlyPriceImageDataset()
-# print(dataset[1])
-# print(type(dataset))
-# print(type(dataset[3][0]))
-# print(type(dataset[3][1]))
 
 train_set, test_set = random_split(dataset, [int(len(dataset) * 17/20), len(dataset) - int(len(dataset) * 17/20)])
 train_set, validation_set = random_split(train_set, [int(len(train_set) * 14/17), len(train_set) - int(len(train_set) * 14/17)])
