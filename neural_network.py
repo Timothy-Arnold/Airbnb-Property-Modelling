@@ -1,3 +1,4 @@
+import itertools
 import json
 import numpy as np
 import os
@@ -59,10 +60,10 @@ def get_nn_config():
             print(error)
     return hyper_dict
 
-hyper_dict = get_nn_config()
+# hyper_dict_example = get_nn_config()
 
 class NN(torch.nn.Module):
-    def __init__(self, config=hyper_dict):
+    def __init__(self, config):
         super().__init__()
         # Define layers
         width = config["hidden_layer_width"]
@@ -82,7 +83,7 @@ class NN(torch.nn.Module):
         processed_features = self.layers(X)
         return processed_features
 
-def train(model, data_loader, epochs):
+def train(model, data_loader, hyper_dict, epochs):
     optimizer_class = hyper_dict["optimizer"]
     optimizer_instance = getattr(torch.optim, optimizer_class)
     optimizer = optimizer_instance(model.parameters(), lr=hyper_dict["learning_rate"])
@@ -152,7 +153,7 @@ def evaluate_model(model, training_duration, epochs):
 
     return metrics_dict
 
-def save_model(model, performance_metrics, nn_folder="models/regression/neural_networks"):
+def save_model(model, hyper_dict, performance_metrics, nn_folder="models/regression/neural_networks"):
     if not isinstance(model, torch.nn.Module):
         print("Error: Model is not a Pytorch Module!")
     else:
@@ -165,23 +166,43 @@ def save_model(model, performance_metrics, nn_folder="models/regression/neural_n
         # Save model
         torch.save(model.state_dict(), f"{model_folder}/model.pt")
         # Get and save hyper parameters
-        hyper_params = get_nn_config()
         with open(f"{model_folder}/hyperparameters.json", 'w') as fp:
-            json.dump(hyper_params, fp)
+            json.dump(hyper_dict, fp)
         # Save performance metrics
         with open(f"{model_folder}/metrics.json", 'w') as fp:
             json.dump(performance_metrics, fp)
 
-def do_full_model_train(model, epochs=5):
+def do_full_model_train(hyper_dict, epochs=5):
+    model = model = NN(hyper_dict)
     start_time = time.time()
-    train(model, train_loader, epochs)
+    train(model, train_loader, hyper_dict, epochs)
     end_time = time.time()
     training_duration = end_time - start_time
     print(f"It took {training_duration} seconds to train the model")
     metrics_dict = evaluate_model(model, training_duration, epochs)
-    save_model(model, metrics_dict)
+    save_model(model, hyper_dict, metrics_dict)
+    print(hyper_dict)
+
+def generate_nn_configs():
+    hyper_values_dict_list = []
+    search_space = {
+    'optimizer': ['SGD', "Adam"],
+    'learning_rate': [0.0001, 0.001],
+    'hidden_layer_width': [3, 10],
+    'depth': [2, 3]
+    }
+    keys = search_space.keys()
+    vals = search_space.values()
+    for instance in itertools.product(*vals):
+        hyper_values_dict = dict(zip(keys, instance))
+        hyper_values_dict_list.append(hyper_values_dict)
+
+    print(hyper_values_dict_list)
+    return hyper_values_dict_list
+
+def find_best_nn():
+    pass
 
 if  __name__ == '__main__':
     np.random.seed(2)
-    model = NN()
-    do_full_model_train(model, 2)
+    do_full_model_train(hyper_dict={'optimizer': 'SGD', 'learning_rate': 0.001, 'hidden_layer_width': 4, 'depth': 2}, epochs=6)
