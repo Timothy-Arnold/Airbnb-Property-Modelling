@@ -214,11 +214,13 @@ def find_best_nn():
         print(RMSE_loss_validation)
         if RMSE_loss_validation < lowest_RMSE_loss_validation:
             lowest_RMSE_loss_validation = RMSE_loss_validation
-            best_model = model_info
+            best_model_info = model_info
         time.sleep(1)
-    print("Best Model:")
-    print(best_model[1])
-    print(best_model[2])
+
+    best_model, best_hyper_dict, best_metrics_dict = best_model_info
+    print("Best Model:", "\n", best_hyper_dict, best_metrics_dict)
+
+    save_model(best_model, best_hyper_dict, best_metrics_dict, "models/regression/neural_networks/best_neural_networks")
 
 if  __name__ == '__main__':
     np.random.seed(2)
