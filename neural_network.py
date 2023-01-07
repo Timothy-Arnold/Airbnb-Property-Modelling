@@ -101,7 +101,7 @@ def train(model, data_loader, hyper_dict, epochs):
             # Make labels the same shape as predictions
             loss = F.mse_loss(prediction, labels.float())
             loss.backward()
-            print("Loss:", loss.item())
+            # print("Loss:", loss.item())
             optimizer.step() # optimisation step
             optimizer.zero_grad()
             writer.add_scalar("loss", loss.item(), batch_idx)
@@ -173,7 +173,7 @@ def save_model(model, hyper_dict, performance_metrics, nn_folder="models/regress
             json.dump(performance_metrics, fp)
 
 def do_full_model_train(hyper_dict, epochs=5):
-    model = model = NN(hyper_dict)
+    model = NN(hyper_dict)
     start_time = time.time()
     train(model, train_loader, hyper_dict, epochs)
     end_time = time.time()
@@ -182,13 +182,15 @@ def do_full_model_train(hyper_dict, epochs=5):
     metrics_dict = evaluate_model(model, training_duration, epochs)
     save_model(model, hyper_dict, metrics_dict)
     print(hyper_dict)
+    model_info = [model, hyper_dict, metrics_dict]
+    return model_info
 
 def generate_nn_configs():
     hyper_values_dict_list = []
     search_space = {
     'optimizer': ['SGD', "Adam"],
     'learning_rate': [0.0001, 0.001],
-    'hidden_layer_width': [3, 10],
+    'hidden_layer_width': [5, 10],
     'depth': [2, 3]
     }
     keys = search_space.keys()
@@ -201,8 +203,24 @@ def generate_nn_configs():
     return hyper_values_dict_list
 
 def find_best_nn():
-    pass
+    lowest_RMSE_loss_validation = np.inf
+    hyper_values_dict_list = generate_nn_configs()
+    for hyper_values_dict in hyper_values_dict_list:
+        model_info = do_full_model_train(hyper_values_dict)
+        metrics_dict = model_info[2]
+        RMSE_loss = metrics_dict["RMSE_loss"]
+        RMSE_loss_validation = RMSE_loss[1]
+        print(hyper_values_dict)
+        print(RMSE_loss_validation)
+        if RMSE_loss_validation < lowest_RMSE_loss_validation:
+            lowest_RMSE_loss_validation = RMSE_loss_validation
+            best_model = model_info
+        time.sleep(1)
+    print("Best Model:")
+    print(best_model[1])
+    print(best_model[2])
 
 if  __name__ == '__main__':
     np.random.seed(2)
-    do_full_model_train(hyper_dict={'optimizer': 'SGD', 'learning_rate': 0.001, 'hidden_layer_width': 4, 'depth': 2}, epochs=6)
+    # do_full_model_train(hyper_dict={'optimizer': 'SGD', 'learning_rate': 0.001, 'hidden_layer_width': 4, 'depth': 2}, epochs=6)
+    find_best_nn()
