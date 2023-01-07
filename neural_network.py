@@ -98,7 +98,8 @@ def train(model, data_loader, hyper_dict, epochs):
             loss = F.mse_loss(prediction, labels.float())
             loss.backward()
             # print("Loss:", loss.item())
-            optimizer.step() # optimisation step
+            # Optimisation step
+            optimizer.step() 
             optimizer.zero_grad()
             writer.add_scalar("loss", loss.item(), batch_idx)
             batch_idx += 1
@@ -220,5 +221,4 @@ def find_best_nn():
 
 if  __name__ == '__main__':
     np.random.seed(2)
-    # do_full_model_train(hyper_dict={'optimizer': 'SGD', 'learning_rate': 0.001, 'hidden_layer_width': 4, 'depth': 2}, epochs=6)
     find_best_nn()
