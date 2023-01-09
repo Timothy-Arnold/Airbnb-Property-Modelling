@@ -41,7 +41,7 @@ print("Size of train set: " + str(len(train_set)))
 print("Size of validation set: " + str(len(validation_set)))
 print("Size of test set: " + str(len(test_set)))
 
-batch_size = 8
+batch_size = 10
 
 train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 validation_loader = DataLoader(validation_set, batch_size=batch_size, shuffle=True)
@@ -71,7 +71,7 @@ class NN(torch.nn.Module):
             layers.append(torch.nn.Linear(width, width))
         layers.append(torch.nn.ReLU())
         layers.append(torch.nn.Linear(width, 1))
-        print(f"Layers: {layers}")
+        # print(f"Layers: {layers}")
         self.layers = torch.nn.Sequential(*layers)
 
     def forward(self, X):
@@ -169,7 +169,7 @@ def save_model(model, hyper_dict, performance_metrics, nn_folder="models/regress
         with open(f"{model_folder}/metrics.json", 'w') as fp:
             json.dump(performance_metrics, fp)
 
-def do_full_model_train(hyper_dict, epochs=5):
+def do_full_model_train(hyper_dict, epochs=10):
     model = NN(hyper_dict)
     start_time = time.time()
     train(model, train_loader, hyper_dict, epochs)
@@ -178,17 +178,16 @@ def do_full_model_train(hyper_dict, epochs=5):
     print(f"It took {training_duration} seconds to train the model")
     metrics_dict = evaluate_model(model, training_duration, epochs)
     save_model(model, hyper_dict, metrics_dict)
-    print(hyper_dict)
     model_info = [model, hyper_dict, metrics_dict]
     return model_info
 
 def generate_nn_configs():
     hyper_values_dict_list = []
     search_space = {
-    'optimizer': ['SGD', "Adam"],
-    'learning_rate': [0.0001, 0.001],
-    'hidden_layer_width': [5, 10],
-    'depth': [2, 3]
+    'optimizer': ['Adam', "AdamW"],
+    'learning_rate': [0.0005, 0.001],
+    'hidden_layer_width': [10, 15, 20],
+    'depth': [2, 4, 6]
     }
     keys = search_space.keys()
     vals = search_space.values()
@@ -199,16 +198,17 @@ def generate_nn_configs():
     print(hyper_values_dict_list)
     return hyper_values_dict_list
 
-def find_best_nn():
+def find_best_nn(epochs=10):
     lowest_RMSE_loss_validation = np.inf
     hyper_values_dict_list = generate_nn_configs()
     for hyper_values_dict in hyper_values_dict_list:
-        model_info = do_full_model_train(hyper_values_dict)
+        model_info = do_full_model_train(hyper_values_dict, epochs)
         metrics_dict = model_info[2]
         RMSE_loss = metrics_dict["RMSE_loss"]
         RMSE_loss_validation = RMSE_loss[1]
         print(hyper_values_dict)
         print(RMSE_loss_validation)
+        print("-" * 80)
         if RMSE_loss_validation < lowest_RMSE_loss_validation:
             lowest_RMSE_loss_validation = RMSE_loss_validation
             best_model_info = model_info
@@ -221,4 +221,4 @@ def find_best_nn():
 
 if  __name__ == '__main__':
     np.random.seed(2)
-    find_best_nn()
+    find_best_nn(20)
