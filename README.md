@@ -765,4 +765,4 @@ if  __name__ == '__main__':
     find_best_nn()
 ```
 
-I saved the best model from each Gridsearch in their own folder in my local directory
+I saved the best model from each Gridsearch in their own folder in my local directory.
