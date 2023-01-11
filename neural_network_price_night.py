@@ -41,7 +41,7 @@ print("Size of train set: " + str(len(train_set)))
 print("Size of validation set: " + str(len(validation_set)))
 print("Size of test set: " + str(len(test_set)))
 
-batch_size = 10
+batch_size = 8
 
 train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 validation_loader = DataLoader(validation_set, batch_size=batch_size, shuffle=True)
