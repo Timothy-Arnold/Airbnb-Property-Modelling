@@ -1,4 +1,3 @@
-# %%
 import itertools
 import json
 import numpy as np
@@ -27,9 +26,13 @@ class AirbnbNightlyPriceImageDataset(Dataset):
         label_categories = label_series.unique()
         one_hot = pd.get_dummies(label_series)
         print(label_categories)
-        print(one_hot.iloc[400])
-        numerical_data[0] = pd.concat([numerical_data[0], one_hot])
-        print(numerical_data[0].info())
+        one_hot = one_hot.astype("int64")
+        numerical_data[0] = pd.concat([numerical_data[0], one_hot], axis=1)
+        # print(numerical_data[0].size())
+        # print(type(numerical_data[0]))
+        # print(numerical_data[0].head())
+        # print(numerical_data[0].shape)
+        # print(numerical_data[0].iloc[400])
         self.features, self.label = numerical_data
 
     def __getitem__(self, index):
@@ -43,8 +46,6 @@ class AirbnbNightlyPriceImageDataset(Dataset):
 
 dataset = AirbnbNightlyPriceImageDataset()
 
-# %%
-
 train_set, test_set = random_split(dataset, [int(len(dataset) * 17/20), len(dataset) - int(len(dataset) * 17/20)])
 train_set, validation_set = random_split(train_set, [int(len(train_set) * 14/17), len(train_set) - int(len(train_set) * 14/17)])
 print(f"The type of the train set: {type(train_set)}")
@@ -52,7 +53,7 @@ print("Size of train set: " + str(len(train_set)))
 print("Size of validation set: " + str(len(validation_set)))
 print("Size of test set: " + str(len(test_set)))
 
-batch_size = 10
+batch_size = 8
 
 train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 validation_loader = DataLoader(validation_set, batch_size=batch_size, shuffle=True)
@@ -76,7 +77,7 @@ class NN(torch.nn.Module):
         width = config["hidden_layer_width"]
         depth = config["depth"]
         layers = []
-        layers.append(torch.nn.Linear(11, width))
+        layers.append(torch.nn.Linear(16, width))
         for hidden_layer in range(depth - 1):
             layers.append(torch.nn.ReLU())
             layers.append(torch.nn.Linear(width, width))
@@ -161,7 +162,7 @@ def evaluate_model(model, training_duration, epochs):
 
     return metrics_dict
 
-def save_model(model, hyper_dict, performance_metrics, nn_folder="models/regression/neural_networks"):
+def save_model(model, hyper_dict, performance_metrics, nn_folder="models/regression/neural_networks_bedrooms"):
     if not isinstance(model, torch.nn.Module):
         print("Error: Model is not a Pytorch Module!")
     else:
@@ -196,9 +197,9 @@ def generate_nn_configs():
     hyper_values_dict_list = []
     search_space = {
     'optimizer': ['Adam', "AdamW"],
-    'learning_rate': [0.0005, 0.001],
+    'learning_rate': [0.002, 0.001],
     'hidden_layer_width': [10, 15, 20],
-    'depth': [2, 4, 6]
+    'depth': [6, 8, 10]
     }
     keys = search_space.keys()
     vals = search_space.values()
@@ -228,7 +229,7 @@ def find_best_nn(epochs=10):
     best_model, best_hyper_dict, best_metrics_dict = best_model_info
     print("Best Model:", "\n", best_hyper_dict, best_metrics_dict)
 
-    save_model(best_model, best_hyper_dict, best_metrics_dict, "models/regression/neural_networks/best_neural_networks")
+    save_model(best_model, best_hyper_dict, best_metrics_dict, "models/regression/neural_networks_bedrooms/best_neural_networks")
 
 if  __name__ == '__main__':
     np.random.seed(2)
