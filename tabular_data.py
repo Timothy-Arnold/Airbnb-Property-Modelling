@@ -43,7 +43,7 @@ def load_airbnb(df, label):
     df_numerical = df.select_dtypes(include = ["int64", "float64"])
     label_series = df_numerical[label]
     features = df_numerical.drop(label, axis=1)
-    full_data = (features, label_series)
+    full_data = [features, label_series]
     return full_data
 
 if __name__ == '__main__':
@@ -51,4 +51,5 @@ if __name__ == '__main__':
     clean_data = clean_tabular_data(raw_data)
     clean_data.to_csv("clean_tabular_data.csv")
     full_data = load_airbnb(clean_data, "Price_Night")
+    # print(full_data[1].describe())
     # print(clean_data["Category"].unique())
