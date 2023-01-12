@@ -8,3 +8,4 @@ models/
 runs/
 nn_config.yaml
 screenshots/
+bedroom_prediction/regression_models/
