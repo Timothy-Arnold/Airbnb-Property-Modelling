@@ -150,7 +150,7 @@ def evaluate_model(model, training_duration, epochs):
 
     return metrics_dict
 
-def save_model(model, hyper_dict, performance_metrics, nn_folder="models/regression/neural_networks_price_night"):
+def save_model(model, hyper_dict, performance_metrics, nn_folder="models/regression/neural_networks"):
     if not isinstance(model, torch.nn.Module):
         print("Error: Model is not a Pytorch Module!")
     else:
@@ -217,7 +217,7 @@ def find_best_nn(epochs=10):
     best_model, best_hyper_dict, best_metrics_dict = best_model_info
     print("Best Model:", "\n", best_hyper_dict, best_metrics_dict)
 
-    save_model(best_model, best_hyper_dict, best_metrics_dict, "models/regression/neural_networks_price_night/best_neural_networks")
+    save_model(best_model, best_hyper_dict, best_metrics_dict, "models/regression/neural_networks/best_neural_networks")
 
 if  __name__ == '__main__':
     np.random.seed(2)
