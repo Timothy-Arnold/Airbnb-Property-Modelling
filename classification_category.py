@@ -95,7 +95,7 @@ def tune_classification_model_hyperparameters(model_class,
     print(best_model_list)
     return best_model_list
 
-def save_model(model_list, folder="models/classification/logistic_regression"):
+def save_model(model_list, folder="models/classification_category/logistic_regression"):
     model = model_list[0]
     hyper_params = model_list[1]
     performance_metrics = model_list[2]
@@ -107,7 +107,7 @@ def save_model(model_list, folder="models/classification/logistic_regression"):
     with open(f"{folder}/metrics.json", 'w') as fp:
         json.dump(performance_metrics, fp)
 
-def evaluate_all_models(task_folder="models/classification"):
+def evaluate_all_models(task_folder="models/classification_category"):
     np.random.seed(2)
     logistic_regression_model = tune_classification_model_hyperparameters("LogisticRegression", 
     X_train, y_train, X_validation, y_validation, search_space = 
