@@ -28,11 +28,6 @@ class AirbnbNightlyPriceImageDataset(Dataset):
         print(label_categories)
         one_hot = one_hot.astype("int64")
         numerical_data[0] = pd.concat([numerical_data[0], one_hot], axis=1)
-        # print(numerical_data[0].size())
-        # print(type(numerical_data[0]))
-        # print(numerical_data[0].head())
-        # print(numerical_data[0].shape)
-        # print(numerical_data[0].iloc[400])
         self.features, self.label = numerical_data
 
     def __getitem__(self, index):
@@ -162,7 +157,7 @@ def evaluate_model(model, training_duration, epochs):
 
     return metrics_dict
 
-def save_model(model, hyper_dict, performance_metrics, nn_folder="models/regression/neural_networks_bedrooms"):
+def save_model(model, hyper_dict, performance_metrics, nn_folder="regression_models/neural_networks_bedrooms"):
     if not isinstance(model, torch.nn.Module):
         print("Error: Model is not a Pytorch Module!")
     else:
@@ -229,7 +224,7 @@ def find_best_nn(epochs=10):
     best_model, best_hyper_dict, best_metrics_dict = best_model_info
     print("Best Model:", "\n", best_hyper_dict, best_metrics_dict)
 
-    save_model(best_model, best_hyper_dict, best_metrics_dict, "models/regression/neural_networks_bedrooms/best_neural_networks")
+    save_model(best_model, best_hyper_dict, best_metrics_dict, "regression_models/neural_networks_bedrooms/best_neural_networks")
 
 if  __name__ == '__main__':
     np.random.seed(2)
