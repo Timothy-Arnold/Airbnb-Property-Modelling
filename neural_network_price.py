@@ -71,7 +71,6 @@ class NN(torch.nn.Module):
             layers.append(torch.nn.Linear(width, width))
         layers.append(torch.nn.ReLU())
         layers.append(torch.nn.Linear(width, 1))
-        # print(f"Layers: {layers}")
         self.layers = torch.nn.Sequential(*layers)
 
     def forward(self, X):
@@ -92,15 +91,16 @@ def train(model, data_loader, hyper_dict, epochs):
         for batch in data_loader:
             features, labels = batch
             features = features.type(torch.float32)
+            # Make labels the same shape as predictions
             labels = torch.unsqueeze(labels, 1)
             prediction = model(features)
-            # Make labels the same shape as predictions
             loss = F.mse_loss(prediction, labels.float())
             loss.backward()
-            # print("Loss:", loss.item())
+            print("Loss:", loss.item())
             # Optimisation step
             optimizer.step() 
             optimizer.zero_grad()
+            # Add loss to Tensorboard graph
             writer.add_scalar("loss", loss.item(), batch_idx)
             batch_idx += 1
 
@@ -157,12 +157,13 @@ def save_model(model, hyper_dict, performance_metrics, nn_folder="models/regress
         # Make model folder
         if not os.path.exists(nn_folder):
             os.makedirs(nn_folder)
+        # Name folder as current time
         save_time = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
         model_folder = nn_folder + "/" + save_time
         os.mkdir(model_folder)
         # Save model
         torch.save(model.state_dict(), f"{model_folder}/model.pt")
-        # Get and save hyper parameters
+        # Save hyper parameters
         with open(f"{model_folder}/hyperparameters.json", 'w') as fp:
             json.dump(hyper_dict, fp)
         # Save performance metrics
@@ -191,11 +192,11 @@ def generate_nn_configs():
     }
     keys = search_space.keys()
     vals = search_space.values()
+    # Find all combindations of hyperparameters
     for instance in itertools.product(*vals):
         hyper_values_dict = dict(zip(keys, instance))
         hyper_values_dict_list.append(hyper_values_dict)
 
-    print(hyper_values_dict_list)
     return hyper_values_dict_list
 
 def find_best_nn(epochs=10):
@@ -212,6 +213,7 @@ def find_best_nn(epochs=10):
         if RMSE_loss_validation < lowest_RMSE_loss_validation:
             lowest_RMSE_loss_validation = RMSE_loss_validation
             best_model_info = model_info
+        # Pause to make sure NNs are saved under folders with different names
         time.sleep(1)
 
     best_model, best_hyper_dict, best_metrics_dict = best_model_info
@@ -220,5 +222,4 @@ def find_best_nn(epochs=10):
     save_model(best_model, best_hyper_dict, best_metrics_dict, "models/regression_price/neural_networks/best_neural_networks")
 
 if  __name__ == '__main__':
-    np.random.seed(2)
     find_best_nn(20)
