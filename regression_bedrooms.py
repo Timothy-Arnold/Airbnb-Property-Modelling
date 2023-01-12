@@ -28,12 +28,11 @@ np.random.seed(2)
 #Split dataset
 clean_data = pd.read_csv("clean_tabular_data.csv")
 X, y = tabular_data.load_airbnb(clean_data, "bedrooms")
-print(X.describe())
-label_series = clean_data["Category"]
-label_categories = label_series.unique()
-one_hot = pd.get_dummies(label_series)
-print(label_categories)
+category_series = clean_data["Category"]
+category_options = category_series.unique()
+one_hot = pd.get_dummies(category_series)
 one_hot = one_hot.astype("int64")
+X = pd.concat([X, one_hot], axis=1)
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
 
@@ -134,7 +133,7 @@ def evaluate_all_models(task_folder="models/regression_bedrooms"):
     "criterion": ["squared_error", "absolute_error"],
     "max_depth": [15, 30, 45, 60],
     "min_samples_split": [2, 4, 0.2, 0.4],
-    "max_features": [4, 6, 8]
+    "max_features": [6, 10, 14]
     })
 
     save_model(decision_tree_model, folder=f"{task_folder}/decision_tree")
@@ -144,9 +143,9 @@ def evaluate_all_models(task_folder="models/regression_bedrooms"):
     {
     "n_estimators": [50, 100, 150],
     "criterion": ["squared_error", "absolute_error"],
-    "max_depth": [30, 40, 50],
+    "max_depth": [40, 50, 60],
     "min_samples_split": [2, 0.1, 0.2],
-    "max_features": [1, 2]
+    "max_features": [2, 4, 6]
     })
 
     save_model(random_forest_model, folder=f"{task_folder}/random_forest")
@@ -158,7 +157,7 @@ def evaluate_all_models(task_folder="models/regression_bedrooms"):
     "loss": ["squared_error", "absolute_error"],
     "max_depth": [1, 3, 5],
     "learning_rate": [0.05, 0.1, 0.2],
-    "max_features": [1, 2, 3]
+    "max_features": [1, 3, 5]
     })
 
     save_model(gradient_boosting_model, folder=f"{task_folder}/gradient_boosting")
