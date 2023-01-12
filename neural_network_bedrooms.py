@@ -22,10 +22,10 @@ class AirbnbNightlyPriceImageDataset(Dataset):
         super().__init__()
         clean_data = pd.read_csv("clean_tabular_data.csv")
         numerical_data = tabular_data.load_airbnb(clean_data, "bedrooms")
-        label_series = clean_data["Category"]
-        label_categories = label_series.unique()
-        one_hot = pd.get_dummies(label_series)
-        print(label_categories)
+        category_series = clean_data["Category"]
+        category_options = category_series.unique()
+        one_hot = pd.get_dummies(category_series)
+        print(category_options)
         one_hot = one_hot.astype("int64")
         numerical_data[0] = pd.concat([numerical_data[0], one_hot], axis=1)
         self.features, self.label = numerical_data

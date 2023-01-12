@@ -4,6 +4,10 @@ import json
 import numpy as np
 import os
 import pandas as pd
+import os, sys
+
+parent = os.path.abspath('.')
+sys.path.insert(1, parent)
 
 import tabular_data
 
@@ -23,8 +27,13 @@ np.random.seed(2)
 
 #Split dataset
 clean_data = pd.read_csv("clean_tabular_data.csv")
-X, y = tabular_data.load_airbnb(clean_data, "Price_Night")
-# print(X.describe())
+X, y = tabular_data.load_airbnb(clean_data, "bedrooms")
+print(X.describe())
+label_series = clean_data["Category"]
+label_categories = label_series.unique()
+one_hot = pd.get_dummies(label_series)
+print(label_categories)
+one_hot = one_hot.astype("int64")
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
 
