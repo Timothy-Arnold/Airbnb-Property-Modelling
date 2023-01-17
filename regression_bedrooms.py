@@ -23,22 +23,37 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.tree import DecisionTreeRegressor
 
-np.random.seed(2)
+hyper_param_dict = {
+    "DecisionTreeRegressor" : {
+    "criterion": ["squared_error", "absolute_error"],
+    "max_depth": [15, 30, 45, 60],
+    "min_samples_split": [2, 4, 0.2, 0.4],
+    "max_features": [6, 10, 14]
+    },
+    "RandomForestRegressor": {
+    "n_estimators": [50, 100, 150],
+    "criterion": ["squared_error", "absolute_error"],
+    "max_depth": [40, 50, 60],
+    "min_samples_split": [2, 0.1, 0.2],
+    "max_features": [2, 4, 6]
+    },
+    "GradientBoostingRegressor": {
+    "n_estimators": [25, 50, 100],
+    "loss": ["squared_error", "absolute_error"],
+    "max_depth": [1, 3, 5],
+    "learning_rate": [0.05, 0.1, 0.2],
+    "max_features": [1, 3, 5]
+    }
+}
 
-#Split dataset
-clean_data = pd.read_csv("clean_tabular_data.csv")
-X, y = tabular_data.load_airbnb(clean_data, "bedrooms")
-category_series = clean_data["Category"]
-category_options = category_series.unique()
-one_hot = pd.get_dummies(category_series)
-one_hot = one_hot.astype("int64")
-X = pd.concat([X, one_hot], axis=1)
+model_class_list = hyper_param_dict.keys()
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
-
-X_test, X_validation, y_test, y_validation = train_test_split(
-    X_test, y_test, test_size=0.5
-)
+model_folder_name_dict = {
+                        "SGDRegressor" : "linear_regression",
+                        "DecisionTreeRegressor" : "decision_tree", 
+                        "RandomForestRegressor" : "random_forest",
+                        "GradientBoostingRegressor" : "gradient_boosting"
+                        }
 
 def create_first_model():
     sgd = SGDRegressor() 
@@ -109,14 +124,14 @@ def tune_regression_model_hyperparameters(model_class,
     validation_rmse = mean_squared_error(y_validation, y_hat_validation, squared=False)
     validation_r2 = r2_score(y_validation, y_hat_validation)
     performance_metrics_dict = {"validation_RMSE": validation_rmse, "validation_R2": validation_r2}
-    best_model_list = [best_model.fit(X_train, y_train), GS.best_params_, performance_metrics_dict]
-    print(best_model_list)
-    return best_model_list
+    best_model_details = [best_model.fit(X_train, y_train), GS.best_params_, performance_metrics_dict]
+    print(best_model_details)
+    return best_model_details
 
-def save_model(model_list, folder="models/regression_bedrooms/linear_regression"):
-    model = model_list[0]
-    hyper_params = model_list[1]
-    performance_metrics = model_list[2]
+def save_model(model_details, folder="models/regression_bedrooms/linear_regression"):
+    model = model_details[0]
+    hyper_params = model_details[1]
+    performance_metrics = model_details[2]
     if not os.path.exists(folder):
         os.makedirs(folder)
     joblib.dump(model, f"{folder}/model.joblib")
@@ -126,52 +141,49 @@ def save_model(model_list, folder="models/regression_bedrooms/linear_regression"
         json.dump(performance_metrics, fp)
 
 def evaluate_all_models(task_folder="models/regression_bedrooms"):
-    np.random.seed(2)
-    decision_tree_model = tune_regression_model_hyperparameters("DecisionTreeRegressor", 
-    X_train, y_train, X_validation, y_validation, search_space = 
-    {
-    "criterion": ["squared_error", "absolute_error"],
-    "max_depth": [15, 30, 45, 60],
-    "min_samples_split": [2, 4, 0.2, 0.4],
-    "max_features": [6, 10, 14]
-    })
+    #Initialize dictionary of models
+    model_details_dict = {}
+    for model_class in model_class_list:
 
-    save_model(decision_tree_model, folder=f"{task_folder}/decision_tree")
+        model_details_dict[f"{model_class}"] = tune_regression_model_hyperparameters(
+            model_class,
+            X_train,
+            y_train,
+            X_validation,
+            y_validation,
+            search_space = hyper_param_dict[f"{model_class}"]
+        )
 
-    random_forest_model = tune_regression_model_hyperparameters("RandomForestRegressor", 
-    X_train, y_train, X_validation, y_validation, search_space = 
-    {
-    "n_estimators": [50, 100, 150],
-    "criterion": ["squared_error", "absolute_error"],
-    "max_depth": [40, 50, 60],
-    "min_samples_split": [2, 0.1, 0.2],
-    "max_features": [2, 4, 6]
-    })
+        model_folder_name = model_folder_name_dict[f"{model_class}"]
+        save_model(model_details_dict[f"{model_class}"], folder=f"{task_folder}/{model_folder_name}")
 
-    save_model(random_forest_model, folder=f"{task_folder}/random_forest")
-
-    gradient_boosting_model = tune_regression_model_hyperparameters("GradientBoostingRegressor", 
-    X_train, y_train, X_validation, y_validation, search_space = 
-    {
-    "n_estimators": [25, 50, 100],
-    "loss": ["squared_error", "absolute_error"],
-    "max_depth": [1, 3, 5],
-    "learning_rate": [0.05, 0.1, 0.2],
-    "max_features": [1, 3, 5]
-    })
-
-    save_model(gradient_boosting_model, folder=f"{task_folder}/gradient_boosting")
-
-    return decision_tree_model, random_forest_model, gradient_boosting_model
+    return model_details_dict
 
 def find_best_model(model_details_list):
-    validation_scores = [x[2]["validation_RMSE"] for x in model_details_list]
-    best_score_index = np.argmin(validation_scores)
-    best_model_details = model_details_list[best_score_index]
+    # Initialize RMSE loss to be minimized
+    lowest_RMSE_loss_validation = np.inf
+    for model_class in model_class_list:
+        model_details = model_details_list[model_class]
+        RMSE_loss_validation = model_details[2]["validation_RMSE"]
+        if RMSE_loss_validation < lowest_RMSE_loss_validation:
+            lowest_RMSE_loss_validation = RMSE_loss_validation
+            best_model_details = model_details
     return best_model_details
 
 if  __name__ == '__main__':
-    np.random.seed(2)
+    #Split dataset
+    clean_data = pd.read_csv("clean_tabular_data.csv")
+    X, y = tabular_data.load_airbnb(clean_data, "bedrooms")
+    category_series = clean_data["Category"]
+    category_options = category_series.unique()
+    one_hot = pd.get_dummies(category_series)
+    one_hot = one_hot.astype("int64")
+    X = pd.concat([X, one_hot], axis=1)
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+    X_test, X_validation, y_test, y_validation = train_test_split(
+    X_test, y_test, test_size=0.5
+    )
     model_details_list = evaluate_all_models()
     best_model_details = find_best_model(model_details_list)
     print(f"The best model: {best_model_details}")
