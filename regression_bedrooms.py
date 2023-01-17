@@ -23,26 +23,28 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.tree import DecisionTreeRegressor
 
+np.random.seed(2)
+
 hyper_param_dict = {
     "DecisionTreeRegressor" : {
-    "criterion": ["squared_error", "absolute_error"],
-    "max_depth": [15, 30, 45, 60],
-    "min_samples_split": [2, 4, 0.2, 0.4],
-    "max_features": [6, 10, 14]
+        "criterion": ["squared_error", "absolute_error"],
+        "max_depth": [15, 30, 45, 60],
+        "min_samples_split": [2, 4, 0.2, 0.4],
+        "max_features": [6, 10, 14]
     },
     "RandomForestRegressor": {
-    "n_estimators": [50, 100, 150],
-    "criterion": ["squared_error", "absolute_error"],
-    "max_depth": [40, 50, 60],
-    "min_samples_split": [2, 0.1, 0.2],
-    "max_features": [2, 4, 6]
+        "n_estimators": [50, 100, 150],
+        "criterion": ["squared_error", "absolute_error"],
+        "max_depth": [40, 50, 60],
+        "min_samples_split": [2, 0.1, 0.2],
+        "max_features": [2, 4, 6]
     },
     "GradientBoostingRegressor": {
-    "n_estimators": [25, 50, 100],
-    "loss": ["squared_error", "absolute_error"],
-    "max_depth": [1, 3, 5],
-    "learning_rate": [0.05, 0.1, 0.2],
-    "max_features": [1, 3, 5]
+        "n_estimators": [25, 50, 100],
+        "loss": ["squared_error", "absolute_error"],
+        "max_depth": [1, 3, 5],
+        "learning_rate": [0.05, 0.1, 0.2],
+        "max_features": [1, 3, 5]
     }
 }
 
