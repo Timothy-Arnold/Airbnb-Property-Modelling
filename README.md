@@ -1,5 +1,6 @@
 # Airbnb-Property-Modelling
 
+In this project I built frameworks to systematically train, tune, and evaluate models on several tasks tackled by the Airbnb team.
 I decided to use an Ubuntu VM for this project in order to practice coding on Linux.
 
 ## Milestone 1
@@ -136,6 +137,7 @@ import os
 import pandas as pd
 
 import tabular_data
+
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.linear_model import SGDRegressor
@@ -150,16 +152,37 @@ from sklearn.tree import DecisionTreeRegressor
 
 np.random.seed(2)
 
-#Split dataset
-clean_data = pd.read_csv("clean_tabular_data.csv")
-X, y = tabular_data.load_airbnb(clean_data, "Price_Night")
-# print(X.describe())
+hyper_param_dict = {
+    "DecisionTreeRegressor": {
+        "criterion": ["squared_error", "absolute_error"],
+        "max_depth": [15, 30, 45, 60],
+        "min_samples_split": [2, 4, 0.2, 0.4],
+        "max_features": [4, 6, 8]
+    },
+    "RandomForestRegressor": {
+        "n_estimators": [50, 100, 150],
+        "criterion": ["squared_error", "absolute_error"],
+        "max_depth": [30, 40, 50],
+        "min_samples_split": [2, 0.1, 0.2],
+        "max_features": [1, 2]
+    },
+    "GradientBoostingRegressor": {
+        "n_estimators": [25, 50, 100],
+        "loss": ["squared_error", "absolute_error"],
+        "max_depth": [1, 3, 5],
+        "learning_rate": [0.05, 0.1, 0.2],
+        "max_features": [1, 2, 3]
+    }   
+}
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+model_class_list = hyper_param_dict.keys()
 
-X_test, X_validation, y_test, y_validation = train_test_split(
-    X_test, y_test, test_size=0.5
-)
+model_folder_name_dict = {
+                        "SGDRegressor" : "linear_regression",
+                        "DecisionTreeRegressor" : "decision_tree", 
+                        "RandomForestRegressor" : "random_forest",
+                        "GradientBoostingRegressor" : "gradient_boosting"
+                        }
 
 def create_first_model():
     sgd = SGDRegressor() 
@@ -205,9 +228,9 @@ def custom_tune_regression_model_hyperparameters(model_class,
         performance_metrics_dict = {"validation_RMSE": validation_rmse, "validation_R2": validation_r2}
         model_details = [model, hyper_values_dict, performance_metrics_dict]
         fitted_model_list.append(model_details)
-    best_model_list = min(fitted_model_list, key=lambda x: x[2]["validation_RMSE"])
-    print(f"Best model by validation_RMSE metric:\n{best_model_list}")
-    return best_model_list
+    best_model_details = min(fitted_model_list, key=lambda x: x[2]["validation_RMSE"])
+    print(f"Best model by validation_RMSE metric:\n{best_model_details}")
+    return best_model_details
 
 def tune_regression_model_hyperparameters(model_class, 
     X_train, y_train, X_validation, y_validation, search_space):
@@ -230,85 +253,75 @@ def tune_regression_model_hyperparameters(model_class,
     validation_rmse = mean_squared_error(y_validation, y_hat_validation, squared=False)
     validation_r2 = r2_score(y_validation, y_hat_validation)
     performance_metrics_dict = {"validation_RMSE": validation_rmse, "validation_R2": validation_r2}
-    best_model_list = [best_model.fit(X_train, y_train), GS.best_params_, performance_metrics_dict]
-    print(best_model_list)
-    return best_model_list
+    best_model_details = [best_model.fit(X_train, y_train), GS.best_params_, performance_metrics_dict]
+    print(best_model_details)
+    return best_model_details
 
-def save_model(model_list, folder="models/regression/linear_regression"):
-    model = model_list[0]
-    hyper_params = model_list[1]
-    performance_metrics = model_list[2]
+def save_model(model_details, folder="models/regression_price/linear_regression"):
+    model = model_details[0]
+    hyper_params = model_details[1]
+    performance_metrics = model_details[2]
     if not os.path.exists(folder):
         os.makedirs(folder)
+
     joblib.dump(model, f"{folder}/model.joblib")
     with open(f"{folder}/hyperparameters.json", 'w') as fp:
         json.dump(hyper_params, fp)
     with open(f"{folder}/metrics.json", 'w') as fp:
         json.dump(performance_metrics, fp)
 
-def evaluate_all_models():
-    np.random.seed(2)
-    decision_tree_model = tune_regression_model_hyperparameters("DecisionTreeRegressor", 
-    X_train, y_train, X_validation, y_validation, search_space = 
-    {
-    "criterion": ["squared_error", "absolute_error"],
-    "max_depth": [15, 30, 45, 60],
-    "min_samples_split": [2, 4, 0.2, 0.4],
-    "max_features": [4, 6, 8]
-    })
+def evaluate_all_models(task_folder="models/regression_price"):
+    #Initialize dictionary of models
+    model_details_dict = {}
+    for model_class in model_class_list:
 
-    save_model(decision_tree_model, folder="models/regression/decision_tree")
+        model_details_dict[f"{model_class}"] = tune_regression_model_hyperparameters(
+            model_class,
+            X_train,
+            y_train,
+            X_validation,
+            y_validation,
+            search_space = hyper_param_dict[f"{model_class}"]
+        )
 
-    random_forest_model = tune_regression_model_hyperparameters("RandomForestRegressor", 
-    X_train, y_train, X_validation, y_validation, search_space = 
-    {
-    "n_estimators": [50, 100, 150],
-    "criterion": ["squared_error", "absolute_error"],
-    "max_depth": [30, 40, 50],
-    "min_samples_split": [2, 0.1, 0.2],
-    "max_features": [1, 2]
-    })
+        model_folder_name = model_folder_name_dict[f"{model_class}"]
+        save_model(model_details_dict[f"{model_class}"], folder=f"{task_folder}/{model_folder_name}")
 
-    save_model(random_forest_model, folder="models/regression/random_forest")
-
-    gradient_boosting_model = tune_regression_model_hyperparameters("GradientBoostingRegressor", 
-    X_train, y_train, X_validation, y_validation, search_space = 
-    {
-    "n_estimators": [25, 50, 100],
-    "loss": ["squared_error", "absolute_error"],
-    "max_depth": [1, 3, 5],
-    "learning_rate": [0.05, 0.1, 0.2],
-    "max_features": [1, 2, 3]
-    })
-
-    save_model(gradient_boosting_model, folder="models/regression/gradient_boosting")
-
-    return decision_tree_model, random_forest_model, gradient_boosting_model
+    return model_details_dict
 
 def find_best_model(model_details_list):
-    validation_scores = [x[2]["validation_RMSE"] for x in model_details_list]
-    print(validation_scores)
-    best_score_index = np.argmin(validation_scores)
-    print(best_score_index)
-    best_model_details = model_details_list[best_score_index]
+    # Initialize RMSE loss to be minimized
+    lowest_RMSE_loss_validation = np.inf
+    for model_class in model_class_list:
+        model_details = model_details_list[model_class]
+        RMSE_loss_validation = model_details[2]["validation_RMSE"]
+        if RMSE_loss_validation < lowest_RMSE_loss_validation:
+            lowest_RMSE_loss_validation = RMSE_loss_validation
+            best_model_details = model_details
     return best_model_details
 
 if  __name__ == '__main__':
-    np.random.seed(2)
-    model_details_list = evaluate_all_models()
-    best_model_details = find_best_model(model_details_list)
+    clean_data = pd.read_csv("clean_tabular_data.csv")
+    X, y = tabular_data.load_airbnb(clean_data, "Price_Night")
+    # Split dataset
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+    X_test, X_validation, y_test, y_validation = train_test_split(
+        X_test, y_test, test_size=0.5
+    )
+    model_details_dict = evaluate_all_models()
+    best_model_details = find_best_model(model_details_dict)
     print(f"The best model: {best_model_details}")
 ```
 
 The metrics of the 4 models I created:
 
-Linear Regression: `{"validation_RMSE": 2903929721.9552526, "validation_R2": -598955739200091.6}` (was just to form a baseline)
+**Linear Regression:** `{"validation_RMSE": 2903929721.9552526, "validation_R2": -598955739200091.6}` (was just to form a baseline)
 
-Decision Tree: `{"validation_RMSE": 100.52561862530366, "validation_R2": 0.2822453150965425}`
+**Decision Tree:** `{"validation_RMSE": 100.52561862530366, "validation_R2": 0.2822453150965425}`
 
-Random Forest: `{"validation_RMSE": 98.03204464049095, "validation_R2": 0.31741200068775266}`
+**Random Forest:** `{"validation_RMSE": 98.03204464049095, "validation_R2": 0.31741200068775266}`
 
-Gradient Boosting: `{"validation_RMSE": 99.44261603457791, "validation_R2": 0.29762732318068996}`
+**Gradient Boosting:** `{"validation_RMSE": 99.44261603457791, "validation_R2": 0.29762732318068996}`
 
 I programmed my "find_best_model" function to pick the best one based on lowest RSME on my validation set, which turned out to be the Random Forest with these hyperparameters:
 
@@ -321,16 +334,14 @@ Given more time, I would've like to have tried more regression models, and possi
 In this milestone I tried applying 4 different classification models to my numerical data, with the label being the Category of the property (of which there were 5). The k-fold validation strategy inbuilt in GridsearchCV, as well as my final scores being based on my own separated validation set, prevented me from overfitting these models.
 
 ```python
-# %%
+
 import collections
-import itertools
 import joblib
 import json
 import numpy as np
 import os
 import pandas as pd
 
-import tabular_data
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
@@ -343,33 +354,44 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier
 
-# Product features and labels directly from the csv
-clean_data = pd.read_csv("clean_tabular_data.csv")
-features = clean_data.select_dtypes(include = ["int64", "float64"])
-label_series = clean_data["Category"]
-
 np.random.seed(2)
 
-# Encode labels
+hyper_param_dict = {
+    "LogisticRegression": {
+        "tol": [1E-5, 1E-4, 1E-3],
+        "max_iter": [100, 500, 1000],
+        "multi_class": ["multinomial"]
+    },
+    "DecisionTreeClassifier": {
+        "criterion": ["gini", "entropy"],
+        "max_depth": [15, 30, 45, 60],
+        "min_samples_split": [2, 4, 0.2, 0.4],
+        "max_features": [4, 6, 8]
+    },
+    "RandomForestClassifier": {
+        "n_estimators": [50, 100],
+        "criterion": ["gini", "entropy"],
+        "max_depth": [30, 40, 50],
+        "min_samples_split": [2, 0.1, 0.2],
+        "max_features": [1, 2, 3]
+    },
+    "GradientBoostingClassifier": {
+        "n_estimators": [25, 50, 100],
+        "loss": ["log_loss"],
+        "max_depth": [1, 3, 5],
+        "learning_rate": [0.05, 0.1, 0.2],
+        "max_features": [1, 2, 3]
+    }
+}
 
-label_categories = label_series.unique()
-le = LabelEncoder()
-label_encoded = le.fit_transform(label_series)
+model_class_list = hyper_param_dict.keys()
 
-# Count how many of each label there is
-label_count = collections.Counter(label_encoded)
-for key, value in label_count.items():
-   print(f"{key}: {value}")
-
-X, y = (features, label_encoded)
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
-
-X_test, X_validation, y_test, y_validation = train_test_split(
-    X_test, y_test, test_size=0.5
-)
-
-# %%
+model_folder_name_dict = {
+                        "LogisticRegression" : "logistic_regression",
+                        "DecisionTreeClassifier" : "decision_tree", 
+                        "RandomForestClassifier" : "random_forest",
+                        "GradientBoostingClassifier" : "gradient_boosting"
+                        }
 
 def create_first_model():
     log_reg = LogisticRegression(multi_class="multinomial", solver="newton-cg", max_iter=100) 
@@ -398,7 +420,6 @@ def print_performance(y_hat_train, y_hat_validation):
 
 def tune_classification_model_hyperparameters(model_class, 
     X_train, y_train, X_validation, y_validation, search_space):
-    np.random.seed(2)
     models_list =   {
                     "LogisticRegression" : LogisticRegression,
                     "DecisionTreeClassifier" : DecisionTreeClassifier, 
@@ -417,81 +438,72 @@ def tune_classification_model_hyperparameters(model_class,
     validation_accuracy = accuracy_score(y_validation, y_hat_validation)
     validation_f1 = f1_score(y_validation, y_hat_validation, average="macro")
     performance_metrics_dict = {"validation_accuracy": validation_accuracy, "validation_f1": validation_f1}
-    best_model_list = [best_model.fit(X_train, y_train), GS.best_params_, performance_metrics_dict]
-    print(best_model_list)
-    return best_model_list
+    best_model_details = [best_model.fit(X_train, y_train), GS.best_params_, performance_metrics_dict]
+    print(best_model_details)
+    return best_model_details
 
-def save_model(model_list, folder="models/classification/logistic_regression"):
-    model = model_list[0]
-    hyper_params = model_list[1]
-    performance_metrics = model_list[2]
+def save_model(model_details, folder="models/classification_category/logistic_regression"):
+    model = model_details[0]
+    hyper_params = model_details[1]
+    performance_metrics = model_details[2]
     if not os.path.exists(folder):
         os.makedirs(folder)
+
     joblib.dump(model, f"{folder}/model.joblib")
     with open(f"{folder}/hyperparameters.json", 'w') as fp:
         json.dump(hyper_params, fp)
     with open(f"{folder}/metrics.json", 'w') as fp:
         json.dump(performance_metrics, fp)
 
-def evaluate_all_models(task_folder="models/classification"):
-    np.random.seed(2)
-    logistic_regression_model = tune_classification_model_hyperparameters("LogisticRegression", 
-    X_train, y_train, X_validation, y_validation, search_space = 
-    {
-    "tol": [1E-5, 1E-4, 1E-3],
-    "max_iter": [100, 500, 1000],
-    "multi_class": ["multinomial"]
-    })
+def evaluate_all_models(task_folder="models/classification_category"):
+    #Initialize dictionary of models
+    model_details_dict = {}
+    for model_class in model_class_list:
 
-    save_model(logistic_regression_model, folder=f"{task_folder}/logistic_regression")
-    
-    np.random.seed(2)
-    decision_tree_model = tune_classification_model_hyperparameters("DecisionTreeClassifier", 
-    X_train, y_train, X_validation, y_validation, search_space = 
-    {
-    "criterion": ["gini", "entropy"],
-    "max_depth": [15, 30, 45, 60],
-    "min_samples_split": [2, 4, 0.2, 0.4],
-    "max_features": [4, 6, 8]
-    })
+        model_details_dict[f"{model_class}"] = tune_classification_model_hyperparameters(
+            model_class,
+            X_train,
+            y_train,
+            X_validation,
+            y_validation,
+            search_space = hyper_param_dict[f"{model_class}"]
+        )
 
-    save_model(decision_tree_model, folder=f"{task_folder}/decision_tree")
-
-    np.random.seed(2)
-    random_forest_model = tune_classification_model_hyperparameters("RandomForestClassifier", 
-    X_train, y_train, X_validation, y_validation, search_space = 
-    {
-    "n_estimators": [50, 100],
-    "criterion": ["gini", "entropy"],
-    "max_depth": [30, 40, 50],
-    "min_samples_split": [2, 0.1, 0.2],
-    "max_features": [1, 2, 3]
-    })
-
-    save_model(random_forest_model, folder=f"{task_folder}/random_forest")
-
-    np.random.seed(2)
-    gradient_boosting_model = tune_classification_model_hyperparameters("GradientBoostingClassifier", 
-    X_train, y_train, X_validation, y_validation, search_space = 
-    {
-    "n_estimators": [25, 50, 100],
-    "loss": ["log_loss"],
-    "max_depth": [1, 3, 5],
-    "learning_rate": [0.05, 0.1, 0.2],
-    "max_features": [1, 2, 3]
-    })
-
-    save_model(gradient_boosting_model, folder=f"{task_folder}/gradient_boosting")
-
-    return logistic_regression_model, decision_tree_model, random_forest_model, gradient_boosting_model
+        model_folder_name = model_folder_name_dict[f"{model_class}"]
+        save_model(model_details_dict[f"{model_class}"], folder=f"{task_folder}/{model_folder_name}")
+    return model_details_dict
 
 def find_best_model(model_details_list):
-    validation_scores = [x[2]["validation_accuracy"] for x in model_details_list]
-    best_score_index = np.argmax(validation_scores)
-    best_model_details = model_details_list[best_score_index]
+    # Initialize validation accuracy to be maximized
+    highest_accuracy_validation = 0
+    for model_class in model_class_list:
+        model_details = model_details_list[model_class]
+        accuracy_validation = model_details[2]["validation_accuracy"]
+        if accuracy_validation > highest_accuracy_validation:
+            highest_accuracy_validation = accuracy_validation
+            best_model_details = model_details
     return best_model_details
 
 if  __name__ == '__main__':
+    clean_data = pd.read_csv("clean_tabular_data.csv")
+    features = clean_data.select_dtypes(include = ["int64", "float64"])
+    label_series = clean_data["Category"]
+    # Encode labels
+    label_categories = label_series.unique()
+    le = LabelEncoder()
+    label_encoded = le.fit_transform(label_series)
+
+    # Count how many of each label there is
+    label_count = collections.Counter(label_encoded)
+    for key, value in label_count.items():
+        print(f"{key}: {value}")
+
+    X, y = (features, label_encoded)
+    # Split dataset
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+    X_test, X_validation, y_test, y_validation = train_test_split(
+        X_test, y_test, test_size=0.5
+    )
     y_hat = create_first_model()
     # print_performance(y_hat[0], y_hat[1])
     model_details_list = evaluate_all_models()
@@ -501,13 +513,13 @@ if  __name__ == '__main__':
 
 The metrics of the 4 models I created:
 
-Logistic Regression: `{"validation_accuracy": 0.36, "validation_f1": 0.35727000877587234}`
+**Logistic Regression:** `{"validation_accuracy": 0.36, "validation_f1": 0.35727000877587234}`
 
-Decision Tree: `{"validation_accuracy": 0.4, "validation_f1": 0.39440586327045535}`
+**Decision Tree:** `{"validation_accuracy": 0.4, "validation_f1": 0.39440586327045535}`
 
-Random Forest: `{"validation_accuracy": 0.384, "validation_f1": 0.33516113516113516}`
+**Random Forest:** `{"validation_accuracy": 0.384, "validation_f1": 0.33516113516113516}`
 
-Gradient Boosting: `{"validation_accuracy": 0.472, "validation_f1": 0.4681900452488687}`
+**Gradient Boosting:** `{"validation_accuracy": 0.472, "validation_f1": 0.4681900452488687}`
 
 I programmed my "find_best_model" function to pick the best one based on highest accuracy on my validation set, which turned out to be the Gradient Boosted Classifier with these hyperparameters:
 
@@ -778,7 +790,7 @@ The loss curve for the best model:
 
 ![loss_best](screenshots/loss_best.jpg)
 
-The shape of my neural network:
+The shape of my best performing neural network:
 
 ![neural_network](screenshots/neural_network.jpg)
 
@@ -787,6 +799,7 @@ The shape of my neural network:
 For my final milestone I changed the dataset to have "bedrooms" as the label, with "price_night" as one of the features. I also added "category" as a feature using one-hot encoding (since it had only 5 categories) by using `pd.get_dummies` and concatenating the dataframes.
 
 New neural network code:
+
 ```python
 import itertools
 import json
@@ -1032,7 +1045,7 @@ import json
 import numpy as np
 import os
 import pandas as pd
-import os, sys
+import sys
 
 parent = os.path.abspath('.')
 sys.path.insert(1, parent)
@@ -1053,20 +1066,37 @@ from sklearn.tree import DecisionTreeRegressor
 
 np.random.seed(2)
 
-#Split dataset
-clean_data = pd.read_csv("clean_tabular_data.csv")
-X, y = tabular_data.load_airbnb(clean_data, "bedrooms")
-category_series = clean_data["Category"]
-category_options = category_series.unique()
-one_hot = pd.get_dummies(category_series)
-one_hot = one_hot.astype("int64")
-X = pd.concat([X, one_hot], axis=1)
+hyper_param_dict = {
+    "DecisionTreeRegressor": {
+        "criterion": ["squared_error", "absolute_error"],
+        "max_depth": [15, 30, 45, 60],
+        "min_samples_split": [2, 4, 0.2, 0.4],
+        "max_features": [6, 10, 14]
+    },
+    "RandomForestRegressor": {
+        "n_estimators": [50, 100, 150],
+        "criterion": ["squared_error", "absolute_error"],
+        "max_depth": [40, 50, 60],
+        "min_samples_split": [2, 0.1, 0.2],
+        "max_features": [2, 4, 6]
+    },
+    "GradientBoostingRegressor": {
+        "n_estimators": [25, 50, 100],
+        "loss": ["squared_error", "absolute_error"],
+        "max_depth": [1, 3, 5],
+        "learning_rate": [0.05, 0.1, 0.2],
+        "max_features": [1, 3, 5]
+    }
+}
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+model_class_list = hyper_param_dict.keys()
 
-X_test, X_validation, y_test, y_validation = train_test_split(
-    X_test, y_test, test_size=0.5
-)
+model_folder_name_dict = {
+                        "SGDRegressor" : "linear_regression",
+                        "DecisionTreeRegressor" : "decision_tree", 
+                        "RandomForestRegressor" : "random_forest",
+                        "GradientBoostingRegressor" : "gradient_boosting"
+                        }
 
 def create_first_model():
     sgd = SGDRegressor() 
@@ -1137,16 +1167,17 @@ def tune_regression_model_hyperparameters(model_class,
     validation_rmse = mean_squared_error(y_validation, y_hat_validation, squared=False)
     validation_r2 = r2_score(y_validation, y_hat_validation)
     performance_metrics_dict = {"validation_RMSE": validation_rmse, "validation_R2": validation_r2}
-    best_model_list = [best_model.fit(X_train, y_train), GS.best_params_, performance_metrics_dict]
-    print(best_model_list)
-    return best_model_list
+    best_model_details = [best_model.fit(X_train, y_train), GS.best_params_, performance_metrics_dict]
+    print(best_model_details)
+    return best_model_details
 
-def save_model(model_list, folder="models/regression_bedrooms/linear_regression"):
-    model = model_list[0]
-    hyper_params = model_list[1]
-    performance_metrics = model_list[2]
+def save_model(model_details, folder="models/regression_bedrooms/linear_regression"):
+    model = model_details[0]
+    hyper_params = model_details[1]
+    performance_metrics = model_details[2]
     if not os.path.exists(folder):
         os.makedirs(folder)
+
     joblib.dump(model, f"{folder}/model.joblib")
     with open(f"{folder}/hyperparameters.json", 'w') as fp:
         json.dump(hyper_params, fp)
@@ -1154,70 +1185,66 @@ def save_model(model_list, folder="models/regression_bedrooms/linear_regression"
         json.dump(performance_metrics, fp)
 
 def evaluate_all_models(task_folder="models/regression_bedrooms"):
-    np.random.seed(2)
-    decision_tree_model = tune_regression_model_hyperparameters("DecisionTreeRegressor", 
-    X_train, y_train, X_validation, y_validation, search_space = 
-    {
-    "criterion": ["squared_error", "absolute_error"],
-    "max_depth": [15, 30, 45, 60],
-    "min_samples_split": [2, 4, 0.2, 0.4],
-    "max_features": [6, 10, 14]
-    })
+    #Initialize dictionary of models
+    model_details_dict = {}
+    for model_class in model_class_list:
 
-    save_model(decision_tree_model, folder=f"{task_folder}/decision_tree")
+        model_details_dict[f"{model_class}"] = tune_regression_model_hyperparameters(
+            model_class,
+            X_train,
+            y_train,
+            X_validation,
+            y_validation,
+            search_space = hyper_param_dict[f"{model_class}"]
+        )
 
-    random_forest_model = tune_regression_model_hyperparameters("RandomForestRegressor", 
-    X_train, y_train, X_validation, y_validation, search_space = 
-    {
-    "n_estimators": [50, 100, 150],
-    "criterion": ["squared_error", "absolute_error"],
-    "max_depth": [40, 50, 60],
-    "min_samples_split": [2, 0.1, 0.2],
-    "max_features": [2, 4, 6]
-    })
+        model_folder_name = model_folder_name_dict[f"{model_class}"]
+        save_model(model_details_dict[f"{model_class}"], folder=f"{task_folder}/{model_folder_name}")
 
-    save_model(random_forest_model, folder=f"{task_folder}/random_forest")
-
-    gradient_boosting_model = tune_regression_model_hyperparameters("GradientBoostingRegressor", 
-    X_train, y_train, X_validation, y_validation, search_space = 
-    {
-    "n_estimators": [25, 50, 100],
-    "loss": ["squared_error", "absolute_error"],
-    "max_depth": [1, 3, 5],
-    "learning_rate": [0.05, 0.1, 0.2],
-    "max_features": [1, 3, 5]
-    })
-
-    save_model(gradient_boosting_model, folder=f"{task_folder}/gradient_boosting")
-
-    return decision_tree_model, random_forest_model, gradient_boosting_model
+    return model_details_dict
 
 def find_best_model(model_details_list):
-    validation_scores = [x[2]["validation_RMSE"] for x in model_details_list]
-    best_score_index = np.argmin(validation_scores)
-    best_model_details = model_details_list[best_score_index]
+    # Initialize RMSE loss to be minimized
+    lowest_RMSE_loss_validation = np.inf
+    for model_class in model_class_list:
+        model_details = model_details_list[model_class]
+        RMSE_loss_validation = model_details[2]["validation_RMSE"]
+        if RMSE_loss_validation < lowest_RMSE_loss_validation:
+            lowest_RMSE_loss_validation = RMSE_loss_validation
+            best_model_details = model_details
     return best_model_details
 
 if  __name__ == '__main__':
-    np.random.seed(2)
+    clean_data = pd.read_csv("clean_tabular_data.csv")
+    X, y = tabular_data.load_airbnb(clean_data, "bedrooms")
+    category_series = clean_data["Category"]
+    category_options = category_series.unique()
+    one_hot = pd.get_dummies(category_series)
+    one_hot = one_hot.astype("int64")
+    X = pd.concat([X, one_hot], axis=1)
+    # Split dataset
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+    X_test, X_validation, y_test, y_validation = train_test_split(
+    X_test, y_test, test_size=0.5
+    )
     model_details_list = evaluate_all_models()
     best_model_details = find_best_model(model_details_list)
     print(f"The best model: {best_model_details}")
 ```
 
-Example of running this code:
+Example of running this code to get the best traditional model:
 
 ![loss_all](screenshots/traditional_models_running.png)
 
 The metrics of the 4 models I created:
 
-Neural Network: `{"validation_RMSE": 0.37593674659729004, "validation_R2": 0.43938618898391724}`
+**Neural Network:** `{"validation_RMSE": 0.37593674659729004, "validation_R2": 0.43938618898391724}`
 
-Decision Tree: `{"validation_RMSE": 0.6995236474439827, "validation_R2": 0.3429156640311677}`
+**Decision Tree:** `{"validation_RMSE": 0.6995236474439827, "validation_R2": 0.3429156640311677}`
 
-Random Forest: `{"validation_RMSE": 0.3247990147768309, "validation_R2": 0.8583404950154693}`
+**Random Forest:** `{"validation_RMSE": 0.3247990147768309, "validation_R2": 0.8583404950154693}`
 
-Gradient Boosting: `{"validation_RMSE": 0.35296892441190447, "validation_R2": 0.832702574982145}`
+**Gradient Boosting:** `{"validation_RMSE": 0.35296892441190447, "validation_R2": 0.832702574982145}`
 
 The best model turned out to be the Random Forest with these hyperparameters:
 
@@ -1227,12 +1254,12 @@ The best model turned out to be the Random Forest with these hyperparameters:
 
 I made and tuned several models, including neural networks, to predict 3 different labels: Price per Night, Category of the property, and Number of Bedrooms. 
 
-The models which I got the best results with after grid searching:
+The models which I got the best results with after applying grid search to them:
 
-Price per Night: Neural Network
+**Price per Night:** Neural Network
 
-Category of the property: Gradient Boosting Classifier
+**Category of the property:** Gradient Boosting Classifier
 
-Number of Bedrooms: Random Forest Regressor
+**Number of Bedrooms:** Random Forest Regressor
 
 Given more time I would have liked to have made use of my cleaned image data to help train a CNN.
