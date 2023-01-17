@@ -4,7 +4,7 @@ import json
 import numpy as np
 import os
 import pandas as pd
-import os, sys
+import sys
 
 parent = os.path.abspath('.')
 sys.path.insert(1, parent)

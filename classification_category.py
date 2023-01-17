@@ -5,7 +5,6 @@ import numpy as np
 import os
 import pandas as pd
 
-import tabular_data
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
