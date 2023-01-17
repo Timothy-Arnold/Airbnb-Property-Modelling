@@ -22,7 +22,7 @@ from sklearn.tree import DecisionTreeRegressor
 np.random.seed(2)
 
 hyper_param_dict = {
-    "DecisionTreeRegressor" : {
+    "DecisionTreeRegressor": {
         "criterion": ["squared_error", "absolute_error"],
         "max_depth": [15, 30, 45, 60],
         "min_samples_split": [2, 4, 0.2, 0.4],
@@ -132,6 +132,7 @@ def save_model(model_details, folder="models/regression_price/linear_regression"
     performance_metrics = model_details[2]
     if not os.path.exists(folder):
         os.makedirs(folder)
+
     joblib.dump(model, f"{folder}/model.joblib")
     with open(f"{folder}/hyperparameters.json", 'w') as fp:
         json.dump(hyper_params, fp)
@@ -169,10 +170,9 @@ def find_best_model(model_details_list):
     return best_model_details
 
 if  __name__ == '__main__':
-    #Split dataset
     clean_data = pd.read_csv("clean_tabular_data.csv")
     X, y = tabular_data.load_airbnb(clean_data, "Price_Night")
-
+    # Split dataset
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
     X_test, X_validation, y_test, y_validation = train_test_split(
         X_test, y_test, test_size=0.5
